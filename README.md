@@ -19,3 +19,4 @@ Created and maintained by Chris and David
 	9. Rings (Maybe WoW rules of having 2)
 	Then every other item is just in the regular item pool (your toasters, torches, food, potions, etc) 
 - [ ] Add Visual Indication for Armor Slots (WoW Character Pane Inspiration)
+- [ ] Stream Database Changes so the DM sees Player Sheet Changes and Vice Versa
