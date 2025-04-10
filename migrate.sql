@@ -1,0 +1,1 @@
+-- This script used to create the database and tables for the application

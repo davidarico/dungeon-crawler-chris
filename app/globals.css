@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 20 14% 4%;
+    --foreground: 213 31% 91%;
+
+    --muted: 223 14% 10%;
+    --muted-foreground: 215 16% 56%;
+
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 20% 65%;
+
+    --card: 224 71% 4%;
+    --card-foreground: 213 31% 91%;
+
+    --border: 216 34% 17%;
+    --input: 216 34% 17%;
+
+    --primary: 20 84% 50%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 20 84% 50%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 216 34% 17%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.torch-title {
+  position: relative;
+  text-shadow: 0 0 10px rgba(255, 165, 0, 0.7), 0 0 20px rgba(255, 165, 0, 0.5);
+}
+
+.torch-title::before,
+.torch-title::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 30px;
+  height: 60px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 165, 0, 0.8) 0%,
+    rgba(255, 69, 0, 0.5) 60%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  transform: translateY(-50%);
+  animation: flicker 1.5s infinite alternate;
+}
+
+.torch-title::before {
+  left: -40px;
+}
+
+.torch-title::after {
+  right: -40px;
+}
+
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 15px 2px rgba(255, 165, 0, 0.8), 0 0 30px 5px rgba(255, 69, 0, 0.5);
+  }
+  25% {
+    opacity: 0.8;
+    box-shadow: 0 0 10px 1px rgba(255, 165, 0, 0.6), 0 0 20px 3px rgba(255, 69, 0, 0.4);
+  }
+  50% {
+    opacity: 0.9;
+    box-shadow: 0 0 12px 1.5px rgba(255, 165, 0, 0.7), 0 0 25px 4px rgba(255, 69, 0, 0.45);
+  }
+  75% {
+    opacity: 0.7;
+    box-shadow: 0 0 8px 1px rgba(255, 165, 0, 0.5), 0 0 15px 2px rgba(255, 69, 0, 0.3);
+  }
+}
+
+.lootbox-animation {
+  animation: lootbox-glow 2s ease-in-out;
+}
+
+@keyframes lootbox-glow {
+  0% {
+    transform: scale(0.8);
+    box-shadow: 0 0 0 rgba(255, 215, 0, 0);
+  }
+  50% {
+    transform: scale(1.1);
+    box-shadow: 0 0 30px 10px rgba(255, 215, 0, 0.7);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.3);
+  }
+}
+
+.sparkle {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: white;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8);
+  animation: sparkle 1s ease-in-out forwards;
+  opacity: 0;
+}
+
+@keyframes sparkle {
+  0% {
+    transform: scale(0) translate(0, 0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translate(var(--tx), var(--ty));
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 38, 38, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+  }
+}
+
+.health-critical {
+  animation: pulse 2s infinite;
+}
