@@ -1,322 +1,465 @@
-import {
-  mockGames,
-  mockPlayers,
-  mockClasses,
-  mockSpells,
-  mockItems,
-  mockLootboxes,
-  getAbilityModifier as calculateAbilityModifier,
-} from "./mock-data"
+import { createClient } from '@supabase/supabase-js';
+import { getAbilityModifier as calculateAbilityModifier } from "./mock-data";
 
-// Simulate API latency
-const SIMULATE_LATENCY = false
-const LATENCY_MS = 500
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
-/**
- * Helper function to simulate API latency
- */
-async function delay(ms: number): Promise<void> {
-  if (SIMULATE_LATENCY) {
-    return new Promise((resolve) => setTimeout(resolve, ms))
-  }
-  return Promise.resolve()
-}
+// Type definitions based on database schema
+type Game = {
+  id: string;
+  name: string;
+  dm_id: string;
+  is_dm: boolean;
+};
+
+type Player = {
+  id: string;
+  game_id: string;
+  user_id: string;
+  name: string;
+  level: number;
+  health: number;
+  max_health: number;
+  class_id: string;
+  strength: number;
+  agility: number;
+  stamina: number;
+  personality: number;
+  intelligence: number;
+  luck: number;
+  saving_throw_fortitude: number;
+  saving_throw_reflex: number;
+  saving_throw_willpower: number;
+  followers: number;
+  trending_followers: number;
+  gold: number;
+};
+
+type Class = {
+  id: string;
+  name: string;
+};
+
+type Spell = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+type Item = {
+  id: string;
+  name: string;
+  description: string;
+  flavor_text: string;
+  categories: string[];
+  damage: string;
+  range: any;
+  cost: number;
+  special: string[];
+};
+
+type Lootbox = {
+  id: string;
+  name: string;
+  tier: string;
+};
 
 /**
  * Get all games
  */
-export async function getGames(): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return [...mockGames]
+export async function getGames(): Promise<Game[]> {
+  const { data, error } = await supabase
+    .from('games')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**
  * Get a specific game by ID
  */
-export async function getGame(gameId: string): Promise<any | null> {
-  await delay(LATENCY_MS)
-  return mockGames.find((game) => game.id === gameId) || null
+export async function getGame(gameId: string): Promise<Game | null> {
+  const { data, error } = await supabase
+    .from('games')
+    .select('*')
+    .eq('id', gameId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "No rows returned"
+  return data;
 }
 
 /**
  * Get players for a specific game
  */
-export async function getGamePlayers(gameId: string): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return mockPlayers.filter((player) => player.gameId === gameId)
+export async function getGamePlayers(gameId: string): Promise<Player[]> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('game_id', gameId);
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**
  * Get a specific player by ID
  */
-export async function getPlayer(playerId: string): Promise<any | null> {
-  await delay(LATENCY_MS)
-  return mockPlayers.find((player) => player.id === playerId) || null
+export async function getPlayer(playerId: string): Promise<Player | null> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('id', playerId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
 }
 
 /**
  * Get a player by game ID and user ID
  */
-export async function getPlayerByGameAndUser(gameId: string, userId: string): Promise<any | null> {
-  await delay(LATENCY_MS)
-  return mockPlayers.find((player) => player.gameId === gameId && player.userId === userId) || null
+export async function getPlayerByGameAndUser(gameId: string, userId: string): Promise<Player | null> {
+  const { data, error } = await supabase
+    .from('players')
+    .select('*')
+    .eq('game_id', gameId)
+    .eq('user_id', userId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
 }
 
 /**
  * Update a player
  */
-export async function updatePlayer(playerId: string, playerData: Partial<any>): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
-  }
+export async function updatePlayer(playerId: string, playerData: Partial<Player>): Promise<Player> {
+  const { data, error } = await supabase
+    .from('players')
+    .update(playerData)
+    .eq('id', playerId)
+    .select()
+    .single();
 
-  // In a real API, this would update the database
-  const updatedPlayer = { ...mockPlayers[playerIndex], ...playerData }
-  mockPlayers[playerIndex] = updatedPlayer
-
-  return updatedPlayer
+  if (error) throw error;
+  if (!data) throw new Error(`Player with ID ${playerId} not found`);
+  return data;
 }
 
 /**
  * Get all classes
  */
-export async function getClasses(): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return [...mockClasses]
+export async function getClasses(): Promise<Class[]> {
+  const { data, error } = await supabase
+    .from('classes')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**
  * Get a specific class by ID
  */
-export async function getClass(classId: string): Promise<any | null> {
-  await delay(LATENCY_MS)
-  return mockClasses.find((cls) => cls.id === classId) || null
+export async function getClass(classId: string): Promise<Class | null> {
+  const { data, error } = await supabase
+    .from('classes')
+    .select('*')
+    .eq('id', classId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
 }
 
 /**
  * Get all spells
  */
-export async function getSpells(): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return [...mockSpells]
+export async function getSpells(): Promise<Spell[]> {
+  const { data, error } = await supabase
+    .from('spells')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**
  * Get a specific spell by ID
  */
-export async function getSpell(spellId: string): Promise<any | null> {
-  await delay(LATENCY_MS)
-  return mockSpells.find((spell) => spell.id === spellId) || null
+export async function getSpell(spellId: string): Promise<Spell | null> {
+  const { data, error } = await supabase
+    .from('spells')
+    .select('*')
+    .eq('id', spellId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
 }
 
 /**
  * Get spells for a player
  */
-export async function getPlayerSpells(player: any): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return Promise.all(player.spells.map((spellId: string) => getSpell(spellId))).then((spells) => spells.filter(Boolean))
+export async function getPlayerSpells(player: Player): Promise<Spell[]> {
+  const { data, error } = await supabase
+    .from('player_spells')
+    .select('spells(*)')
+    .eq('player_id', player.id);
+
+  if (error) throw error;
+  return data?.flatMap(item => item.spells) || [];
 }
 
 /**
  * Get all items
  */
-export async function getItems(): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return [...mockItems]
+export async function getItems(): Promise<Item[]> {
+  const { data, error } = await supabase
+    .from('items')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**
  * Get a specific item by ID
  */
-export async function getItem(itemId: string): Promise<any | null> {
-  await delay(LATENCY_MS)
-  return mockItems.find((item) => item.id === itemId) || null
+export async function getItem(itemId: string): Promise<Item | null> {
+  const { data, error } = await supabase
+    .from('items')
+    .select('*')
+    .eq('id', itemId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
 }
 
 /**
  * Get items for a player
  */
-export async function getPlayerItems(player: any): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return Promise.all(player.items.map((itemId: string) => getItem(itemId))).then((items) => items.filter(Boolean))
+export async function getPlayerItems(player: Player): Promise<Item[]> {
+  const { data, error } = await supabase
+    .from('player_items')
+    .select('items(*)')
+    .eq('player_id', player.id);
+
+  if (error) throw error;
+  return data?.map(item => item.items).flat() || [];
 }
 
 /**
  * Get all lootboxes
  */
-export async function getLootboxes(): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return [...mockLootboxes]
+export async function getLootboxes(): Promise<Lootbox[]> {
+  const { data, error } = await supabase
+    .from('lootboxes')
+    .select('*');
+
+  if (error) throw error;
+  return data || [];
 }
 
 /**
  * Get a specific lootbox by ID
  */
-export async function getLootbox(lootboxId: string): Promise<any | null> {
-  await delay(LATENCY_MS)
-  return mockLootboxes.find((lootbox) => lootbox.id === lootboxId) || null
+export async function getLootbox(lootboxId: string): Promise<Lootbox | null> {
+  const { data, error } = await supabase
+    .from('lootboxes')
+    .select('*')
+    .eq('id', lootboxId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') throw error;
+  return data;
 }
 
 /**
  * Get lootboxes for a player
  */
-export async function getPlayerLootboxes(player: any): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return Promise.all(player.lootboxes.map((lootboxId: string) => getLootbox(lootboxId))).then((lootboxes) =>
-    lootboxes.filter(Boolean),
-  )
+export async function getPlayerLootboxes(player: Player): Promise<Lootbox[]> {
+  const { data, error } = await supabase
+    .from('player_lootboxes')
+    .select('lootboxes(*)')
+    .eq('player_id', player.id);
+
+  if (error) throw error;
+  return data?.flatMap(item => item.lootboxes) || [];
 }
 
 /**
  * Get items in a lootbox
  */
-export async function getLootboxItems(lootbox: any): Promise<any[]> {
-  await delay(LATENCY_MS)
-  return Promise.all(lootbox.possibleItems.map((itemId: string) => getItem(itemId))).then((items) =>
-    items.filter(Boolean),
-  )
+export async function getLootboxItems(lootbox: Lootbox): Promise<Item[]> {
+  const { data, error } = await supabase
+    .from('lootbox_possible_items')
+    .select('items(*)')
+    .eq('lootbox_id', lootbox.id);
+
+  if (error) throw error;
+  return data?.flatMap(item => item.items) || [];
 }
 
 /**
  * Calculate ability score modifier
  */
 export function getAbilityModifier(score: number): number {
-  return calculateAbilityModifier(score)
+  return calculateAbilityModifier(score);
 }
 
 /**
  * Calculate saving throws based on ability scores and level
  */
-export function calculateSavingThrows(player: any) {
-  const baseValue = Math.floor(player.level / 2)
+export function calculateSavingThrows(player: Player) {
+  const baseValue = Math.floor(player.level / 2);
 
   return {
-    fortitude: baseValue + getAbilityModifier(player.abilityScores.stamina),
-    reflex: baseValue + getAbilityModifier(player.abilityScores.agility),
-    willpower: baseValue + getAbilityModifier(player.abilityScores.personality),
-  }
+    fortitude: baseValue + getAbilityModifier(player.stamina),
+    reflex: baseValue + getAbilityModifier(player.agility),
+    willpower: baseValue + getAbilityModifier(player.personality),
+  };
 }
 
 /**
  * Add item to player
  */
-export async function addItemToPlayer(playerId: string, itemId: string): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
+export async function addItemToPlayer(playerId: string, itemId: string): Promise<Player> {
+  // First check if the player exists
+  const player = await getPlayer(playerId);
+  if (!player) {
+    throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    items: [...mockPlayers[playerIndex].items, itemId],
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Insert into the join table
+  const { error } = await supabase
+    .from('player_items')
+    .insert({ player_id: playerId, item_id: itemId });
 
-  return updatedPlayer
+  if (error) throw error;
+
+  // Return the updated player
+  return player;
 }
 
 /**
  * Remove item from player
  */
-export async function removeItemFromPlayer(playerId: string, itemId: string): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
+export async function removeItemFromPlayer(playerId: string, itemId: string): Promise<Player> {
+  // First check if the player exists
+  const player = await getPlayer(playerId);
+  if (!player) {
+    throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    items: mockPlayers[playerIndex].items.filter((id: string) => id !== itemId),
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Delete from the join table
+  const { error } = await supabase
+    .from('player_items')
+    .delete()
+    .eq('player_id', playerId)
+    .eq('item_id', itemId);
 
-  return updatedPlayer
+  if (error) throw error;
+
+  // Return the updated player
+  return player;
 }
 
 /**
  * Add spell to player
  */
-export async function addSpellToPlayer(playerId: string, spellId: string): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
+export async function addSpellToPlayer(playerId: string, spellId: string): Promise<Player> {
+  // First check if the player exists
+  const player = await getPlayer(playerId);
+  if (!player) {
+    throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    spells: [...mockPlayers[playerIndex].spells, spellId],
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Insert into the join table
+  const { error } = await supabase
+    .from('player_spells')
+    .insert({ player_id: playerId, spell_id: spellId });
 
-  return updatedPlayer
+  if (error) throw error;
+
+  // Return the updated player
+  return player;
 }
 
 /**
  * Remove lootbox from player
  */
-export async function removeLootboxFromPlayer(playerId: string, lootboxId: string): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
+export async function removeLootboxFromPlayer(playerId: string, lootboxId: string): Promise<Player> {
+  // First check if the player exists
+  const player = await getPlayer(playerId);
+  if (!player) {
+    throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    lootboxes: mockPlayers[playerIndex].lootboxes.filter((id: string) => id !== lootboxId),
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Delete from the join table
+  const { error } = await supabase
+    .from('player_lootboxes')
+    .delete()
+    .eq('player_id', playerId)
+    .eq('lootbox_id', lootboxId);
 
-  return updatedPlayer
+  if (error) throw error;
+
+  // Return the updated player
+  return player;
 }
 
 /**
  * Update player health
  */
-export async function updatePlayerHealth(playerId: string, health: number): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
+export async function updatePlayerHealth(playerId: string, health: number): Promise<Player> {
+  // Get the player to check maxHealth
+  const player = await getPlayer(playerId);
+  if (!player) {
+    throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    health: Math.min(Math.max(health, 0), mockPlayers[playerIndex].maxHealth),
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Calculate the new health value within bounds
+  const newHealth = Math.min(Math.max(health, 0), player.max_health);
 
-  return updatedPlayer
+  // Update the player
+  const { data, error } = await supabase
+    .from('players')
+    .update({ health: newHealth })
+    .eq('id', playerId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  if (!data) throw new Error(`Player with ID ${playerId} not found`);
+  
+  return data;
 }
 
 /**
  * Update player gold
  */
-export async function updatePlayerGold(playerId: string, gold: number): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
-  }
+export async function updatePlayerGold(playerId: string, gold: number): Promise<Player> {
+  // Ensure gold is not negative
+  const newGold = Math.max(gold, 0);
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    gold: Math.max(gold, 0),
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Update the player
+  const { data, error } = await supabase
+    .from('players')
+    .update({ gold: newGold })
+    .eq('id', playerId)
+    .select()
+    .single();
 
-  return updatedPlayer
+  if (error) throw error;
+  if (!data) throw new Error(`Player with ID ${playerId} not found`);
+  
+  return data;
 }
 
 /**
@@ -326,108 +469,144 @@ export async function updatePlayerFollowers(
   playerId: string,
   followers: number,
   trendingFollowers: number,
-): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
-  }
+): Promise<Player> {
+  // Ensure values are not negative
+  const newFollowers = Math.max(followers, 0);
+  const newTrendingFollowers = Math.max(trendingFollowers, 0);
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    followers: Math.max(followers, 0),
-    trendingFollowers: Math.max(trendingFollowers, 0),
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Update the player
+  const { data, error } = await supabase
+    .from('players')
+    .update({ 
+      followers: newFollowers, 
+      trending_followers: newTrendingFollowers 
+    })
+    .eq('id', playerId)
+    .select()
+    .single();
 
-  return updatedPlayer
+  if (error) throw error;
+  if (!data) throw new Error(`Player with ID ${playerId} not found`);
+  
+  return data;
 }
 
 /**
  * Assign class to player
  */
-export async function assignClassToPlayer(playerId: string, classId: string): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
+export async function assignClassToPlayer(playerId: string, classId: string): Promise<Player> {
+  // Check if player exists
+  const player = await getPlayer(playerId);
+  if (!player) {
+    throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  const playerClass = await getClass(classId)
+  // Check if class exists
+  const playerClass = await getClass(classId);
   if (!playerClass) {
-    throw new Error(`Class with ID ${classId} not found`)
+    throw new Error(`Class with ID ${classId} not found`);
   }
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    classId,
-    spells: [...playerClass.defaultSpells],
-  }
-  mockPlayers[playerIndex] = updatedPlayer
+  // Start a transaction to update the player and add default spells
+  // First, update the player's class
+  const { data, error } = await supabase
+    .from('players')
+    .update({ class_id: classId })
+    .eq('id', playerId)
+    .select()
+    .single();
 
-  return updatedPlayer
+  if (error) throw error;
+  if (!data) throw new Error(`Failed to update player with ID ${playerId}`);
+
+  // Get default spells for this class
+  const { data: defaultSpells, error: spellsError } = await supabase
+    .from('class_default_spells')
+    .select('spell_id')
+    .eq('class_id', classId);
+
+  if (spellsError) throw spellsError;
+
+  // If there are default spells, add them to the player
+  if (defaultSpells && defaultSpells.length > 0) {
+    // First, remove existing spells
+    await supabase
+      .from('player_spells')
+      .delete()
+      .eq('player_id', playerId);
+
+    // Then add default spells
+    const spellInserts = defaultSpells.map(spell => ({
+      player_id: playerId,
+      spell_id: spell.spell_id
+    }));
+
+    const { error: insertError } = await supabase
+      .from('player_spells')
+      .insert(spellInserts);
+
+    if (insertError) throw insertError;
+  }
+
+  return data;
 }
 
 /**
  * Update player ability scores
  */
-export async function updatePlayerAbilityScores(playerId: string, abilityScores: any): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
-  }
+export async function updatePlayerAbilityScores(playerId: string, abilityScores: Partial<{
+  strength: number;
+  agility: number;
+  stamina: number;
+  personality: number;
+  intelligence: number;
+  luck: number;
+}>): Promise<Player> {
+  // Update the player
+  const { data, error } = await supabase
+    .from('players')
+    .update(abilityScores)
+    .eq('id', playerId)
+    .select()
+    .single();
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    abilityScores: {
-      ...mockPlayers[playerIndex].abilityScores,
-      ...abilityScores,
-    },
-  }
-  mockPlayers[playerIndex] = updatedPlayer
-
-  return updatedPlayer
+  if (error) throw error;
+  if (!data) throw new Error(`Player with ID ${playerId} not found`);
+  
+  return data;
 }
 
 /**
  * Update player saving throws
  */
-export async function updatePlayerSavingThrows(playerId: string, savingThrows: any): Promise<any> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
-  }
+export async function updatePlayerSavingThrows(playerId: string, savingThrows: Partial<{
+  saving_throw_fortitude: number;
+  saving_throw_reflex: number;
+  saving_throw_willpower: number;
+}>): Promise<Player> {
+  // Update the player
+  const { data, error } = await supabase
+    .from('players')
+    .update(savingThrows)
+    .eq('id', playerId)
+    .select()
+    .single();
 
-  // In a real API, this would update the database
-  const updatedPlayer = {
-    ...mockPlayers[playerIndex],
-    savingThrows: {
-      ...mockPlayers[playerIndex].savingThrows,
-      ...savingThrows,
-    },
-  }
-  mockPlayers[playerIndex] = updatedPlayer
-
-  return updatedPlayer
+  if (error) throw error;
+  if (!data) throw new Error(`Player with ID ${playerId} not found`);
+  
+  return data;
 }
 
 /**
  * Delete player
  */
 export async function deletePlayer(playerId: string): Promise<void> {
-  await delay(LATENCY_MS)
-  const playerIndex = mockPlayers.findIndex((player) => player.id === playerId)
-  if (playerIndex === -1) {
-    throw new Error(`Player with ID ${playerId} not found`)
-  }
+  // Delete the player
+  const { error } = await supabase
+    .from('players')
+    .delete()
+    .eq('id', playerId);
 
-  // In a real API, this would update the database
-  mockPlayers.splice(playerIndex, 1)
-
-  return Promise.resolve()
+  if (error) throw error;
 }
