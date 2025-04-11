@@ -11,8 +11,9 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { ArrowLeft, Package, Search } from "lucide-react"
-import { getGame, getGamePlayers, mockItems, mockLootboxes } from "@/lib/mock-data"
+import { ArrowLeft, Package, Search, Loader2 } from "lucide-react"
+import { getGame, getGamePlayers, getItems, getLootboxes } from "@/lib/api"
+import { Game, Player, Item, Lootbox } from "@/lib/types"
 
 const LOOTBOX_TIERS = ["Bronze", "Silver", "Gold", "Platinum", "Legendary", "Celestial"]
 
@@ -21,10 +22,12 @@ export default function LootboxPage() {
   const router = useRouter()
   const gameId = params.gameId as string
 
-  const [game, setGame] = useState<any>(null)
-  const [players, setPlayers] = useState<any[]>([])
-  const [lootboxes, setLootboxes] = useState<any[]>([])
-  const [selectedLootbox, setSelectedLootbox] = useState<any>(null)
+  const [game, setGame] = useState<Game | null>(null)
+  const [players, setPlayers] = useState<Player[]>([])
+  const [lootboxes, setLootboxes] = useState<Lootbox[]>([])
+  const [items, setItems] = useState<Item[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedLootbox, setSelectedLootbox] = useState<Lootbox | null>(null)
 
   const [lootboxName, setLootboxName] = useState("")
   const [selectedTier, setSelectedTier] = useState(LOOTBOX_TIERS[0])
@@ -34,25 +37,41 @@ export default function LootboxPage() {
   const [searchCategory, setSearchCategory] = useState("")
 
   // Get all unique categories
-  const allCategories = Array.from(new Set(mockItems.flatMap((item) => item.categories))).sort()
+  const allCategories = Array.from(new Set(items.flatMap((item) => item.categories || []))).sort()
 
   useEffect(() => {
-    // In a real app, this would be an API call to get game data
-    const gameData = getGame(gameId)
-    if (!gameData) {
-      router.push("/")
-      return
+    async function fetchData() {
+      try {
+        setLoading(true)
+        
+        // Fetch game, players, items, and lootboxes from Supabase
+        const gameData = await getGame(gameId)
+        if (!gameData) {
+          router.push("/")
+          return
+        }
+
+        const [playersData, itemsData, lootboxesData] = await Promise.all([
+          getGamePlayers(gameId),
+          getItems(),
+          getLootboxes()
+        ])
+
+        setGame(gameData)
+        setPlayers(playersData)
+        setItems(itemsData)
+        setLootboxes(lootboxesData)
+      } catch (error) {
+        console.error("Failed to fetch data:", error)
+      } finally {
+        setLoading(false)
+      }
     }
 
-    setGame(gameData)
-    setPlayers(getGamePlayers(gameId))
-
-    // Get lootboxes for this game
-    // In a real app, this would be filtered by gameId
-    setLootboxes(mockLootboxes)
+    fetchData()
   }, [gameId, router])
 
-  const handleSelectLootbox = (lootbox: any) => {
+  const handleSelectLootbox = (lootbox: Lootbox) => {
     setSelectedLootbox(lootbox)
     setLootboxName(lootbox.name)
     setSelectedTier(lootbox.tier)
@@ -84,16 +103,24 @@ export default function LootboxPage() {
   }
 
   // Filter items based on search term and selected category
-  const filteredItems = mockItems.filter((item) => {
+  const filteredItems = items.filter((item) => {
     const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description.toLowerCase().includes(searchTerm.toLowerCase())
 
     const matchesCategory =
-      searchCategory === "all" || searchCategory === "" ? true : item.categories.includes(searchCategory)
+      searchCategory === "all" || searchCategory === "" ? true : item.categories?.includes(searchCategory)
 
     return matchesSearch && matchesCategory
   })
+
+  if (loading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex justify-center items-center">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    )
+  }
 
   if (!game) {
     return <div className="container mx-auto px-4 py-8">Loading...</div>
@@ -220,7 +247,7 @@ export default function LootboxPage() {
                     {selectedItems.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {selectedItems.map((itemId) => {
-                          const item = mockItems.find((i) => i.id === itemId)
+                          const item = items.find((i) => i.id === itemId)
                           return item ? (
                             <Badge key={itemId} variant="secondary" className="flex items-center gap-1 px-3 py-1.5">
                               {item.name}
@@ -301,7 +328,7 @@ export default function LootboxPage() {
                               <p className="text-sm text-muted-foreground italic">"{item.flavorText}"</p>
                               <p className="text-sm mt-1">{item.description}</p>
                               <div className="flex flex-wrap gap-1 mt-2">
-                                {item.categories.map((category) => (
+                                {item.categories?.map((category) => (
                                   <Badge key={category} variant="outline" className="text-xs">
                                     {category}
                                   </Badge>

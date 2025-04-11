@@ -2,7 +2,7 @@
 
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { getAbilityModifier } from "@/lib/mock-data"
+import { getAbilityModifier } from "@/lib/api"
 import { Info } from "lucide-react"
 
 interface AbilityScoreCardProps {

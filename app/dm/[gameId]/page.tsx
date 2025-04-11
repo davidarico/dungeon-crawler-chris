@@ -35,6 +35,7 @@ import {
   TrendingUp,
   UserPlus,
   Users,
+  Loader2,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -47,27 +48,31 @@ import {
   getGame,
   getGamePlayers,
   getClass,
+  getClasses,
   getPlayerSpells,
   getPlayerItems,
   getPlayerLootboxes,
-  mockClasses,
-  mockSpells,
-  mockItems,
-} from "@/lib/mock-data"
+  getItems,
+  getSpells,
+} from "@/lib/api"
 import { AbilityScoreCard } from "@/components/ability-score-card"
 import { SavingThrowsCard } from "@/components/saving-throws-card"
 import { FollowersCard } from "@/components/followers-card"
 import { GoldCard } from "@/components/gold-card"
+import { Game, Player, Class, Spell, Item, Lootbox } from "@/lib/types"
 
 export default function DMPage() {
   const params = useParams()
   const router = useRouter()
   const gameId = params.gameId as string
 
-  const [game, setGame] = useState<any>(null)
-  const [players, setPlayers] = useState<any[]>([])
+  const [game, setGame] = useState<Game | null>(null)
+  const [players, setPlayers] = useState<Player[]>([])
+  const [classes, setClasses] = useState<Class[]>([])
+  const [items, setItems] = useState<Item[]>([])
+  const [spells, setSpells] = useState<Spell[]>([])
   const [inviteLink, setInviteLink] = useState("")
-  const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false)
   const [isSpellsDialogOpen, setIsSpellsDialogOpen] = useState(false)
@@ -88,19 +93,41 @@ export default function DMPage() {
   const [selectedSpells, setSelectedSpells] = useState<string[]>([])
 
   useEffect(() => {
-    // In a real app, this would be an API call to get game data
-    const gameData = getGame(gameId)
-    if (!gameData) {
-      router.push("/")
-      return
+    async function fetchData() {
+      try {
+        // Import the session so we can pass the user ID
+        const { data: session } = await import('next-auth/react').then(mod => ({ data: mod.useSession() }));
+        const userId = session?.data?.user?.id;
+        
+        // Pass the user ID to getGame to determine if they're the DM
+        const gameData = await getGame(gameId, userId);
+        if (!gameData) {
+          router.push("/");
+          return;
+        }
+
+        // If the user isn't the DM for this game, redirect them
+        if (!gameData.isDM) {
+          router.push(`/player/${gameId}`);
+          return;
+        }
+
+        setGame(gameData);
+        setPlayers(await getGamePlayers(gameId));
+        setClasses(await getClasses());
+        setItems(await getItems());
+        setSpells(await getSpells());
+
+        // Generate invite link
+        const baseUrl = window.location.origin;
+        setInviteLink(`${baseUrl}/invite/${gameId}`);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        router.push("/");
+      }
     }
 
-    setGame(gameData)
-    setPlayers(getGamePlayers(gameId))
-
-    // Generate invite link
-    const baseUrl = window.location.origin
-    setInviteLink(`${baseUrl}/invite/${gameId}`)
+    fetchData();
   }, [gameId, router])
 
   const handleCopyInviteLink = () => {
@@ -140,7 +167,7 @@ export default function DMPage() {
   const handleAssignClass = (classId: string) => {
     if (!selectedPlayer) return
 
-    const selectedClass = getClass(classId)
+    const selectedClass = classes.find((cls) => cls.id === classId)
     if (!selectedClass) return
 
     setPlayers(
@@ -265,14 +292,14 @@ export default function DMPage() {
     setIsGoldDialogOpen(false)
   }
 
-  const filteredItems = mockItems.filter(
+  const filteredItems = items.filter(
     (item) =>
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.categories.some((cat) => cat.toLowerCase().includes(searchTerm.toLowerCase())),
   )
 
-  const filteredSpells = mockSpells.filter(
+  const filteredSpells = spells.filter(
     (spell) =>
       spell.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       spell.description.toLowerCase().includes(searchTerm.toLowerCase()),
@@ -325,7 +352,7 @@ export default function DMPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {players.map((player) => {
-          const playerClass = player.classId ? getClass(player.classId) : null
+          const playerClass = player.classId ? classes.find((cls) => cls.id === player.classId) : null
           const playerSpells = getPlayerSpells(player)
           const playerItems = getPlayerItems(player)
           const playerLootboxes = getPlayerLootboxes(player)
@@ -583,7 +610,7 @@ export default function DMPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-            {mockClasses.map((cls) => (
+            {classes.map((cls) => (
               <Card
                 key={cls.id}
                 className="cursor-pointer hover:bg-secondary/20 transition-colors"
@@ -596,7 +623,7 @@ export default function DMPage() {
                   <p className="text-sm text-muted-foreground mb-2">Default Spells:</p>
                   <div className="flex flex-wrap gap-1">
                     {cls.defaultSpells.map((spellId) => {
-                      const spell = mockSpells.find((s) => s.id === spellId)
+                      const spell = spells.find((s) => s.id === spellId)
                       return spell ? (
                         <Badge key={spellId} variant="outline">
                           {spell.name}

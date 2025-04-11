@@ -1,87 +1,55 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAbilityModifier as calculateAbilityModifier } from "./mock-data";
+import { 
+  Game, Player, Class, Spell, Item, Lootbox, 
+  AbilityScores, SavingThrows
+} from './types';
+import { snakeToCamelCase, camelToSnakeCase } from './utils';
 
 // Initialize Supabase client
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Type definitions based on database schema
-type Game = {
-  id: string;
-  name: string;
-  dm_id: string;
-  is_dm: boolean;
-};
-
-type Player = {
-  id: string;
-  game_id: string;
-  user_id: string;
-  name: string;
-  level: number;
-  health: number;
-  max_health: number;
-  class_id: string;
-  strength: number;
-  agility: number;
-  stamina: number;
-  personality: number;
-  intelligence: number;
-  luck: number;
-  saving_throw_fortitude: number;
-  saving_throw_reflex: number;
-  saving_throw_willpower: number;
-  followers: number;
-  trending_followers: number;
-  gold: number;
-};
-
-type Class = {
-  id: string;
-  name: string;
-};
-
-type Spell = {
-  id: string;
-  name: string;
-  description: string;
-};
-
-type Item = {
-  id: string;
-  name: string;
-  description: string;
-  flavor_text: string;
-  categories: string[];
-  damage: string;
-  range: any;
-  cost: number;
-  special: string[];
-};
-
-type Lootbox = {
-  id: string;
-  name: string;
-  tier: string;
-};
+// Re-export the getAbilityModifier function
+export { getAbilityModifier } from './types';
 
 /**
  * Get all games
+ * @param userId Optional user ID to determine if the user is a DM for each game
  */
-export async function getGames(): Promise<Game[]> {
+export async function getGames(userId?: string): Promise<Game[]> {
   const { data, error } = await supabase
     .from('games')
     .select('*');
 
   if (error) throw error;
-  return data || [];
+  
+  if (!data) return [];
+  
+  // Transform the data and add isDM flag if userId is provided
+  const transformedGames = data.map(game => {
+    const camelGame = snakeToCamelCase(game);
+    
+    // Add isDM property if userId is provided
+    if (userId) {
+      return {
+        ...camelGame,
+        isDM: game.dm_id === userId
+      };
+    }
+    
+    return camelGame;
+  });
+  
+  return transformedGames;
 }
 
 /**
  * Get a specific game by ID
+ * @param gameId The ID of the game to retrieve
+ * @param userId Optional user ID to determine if the user is the DM
  */
-export async function getGame(gameId: string): Promise<Game | null> {
+export async function getGame(gameId: string, userId?: string): Promise<Game | null> {
   const { data, error } = await supabase
     .from('games')
     .select('*')
@@ -89,7 +57,20 @@ export async function getGame(gameId: string): Promise<Game | null> {
     .single();
 
   if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "No rows returned"
-  return data;
+  
+  if (!data) return null;
+  
+  const camelGame = snakeToCamelCase(data);
+  
+  // Add isDM property if userId is provided
+  if (userId) {
+    return {
+      ...camelGame,
+      isDM: data.dm_id === userId
+    };
+  }
+  
+  return camelGame;
 }
 
 /**
@@ -102,7 +83,49 @@ export async function getGamePlayers(gameId: string): Promise<Player[]> {
     .eq('game_id', gameId);
 
   if (error) throw error;
-  return data || [];
+  
+  // Transform the structure to match our frontend Player type
+  if (data && data.length > 0) {
+    const convertedPlayers = data.map(player => {
+      const camelPlayer = snakeToCamelCase(player);
+      
+      // Create nested ability scores and saving throws objects
+      const abilityScores: AbilityScores = {
+        strength: player.strength,
+        agility: player.agility,
+        stamina: player.stamina,
+        personality: player.personality,
+        intelligence: player.intelligence,
+        luck: player.luck
+      };
+      
+      const savingThrows: SavingThrows = {
+        fortitude: player.saving_throw_fortitude,
+        reflex: player.saving_throw_reflex,
+        willpower: player.saving_throw_willpower
+      };
+      
+      return {
+        ...camelPlayer,
+        abilityScores,
+        savingThrows,
+        // Remove these properties as they're now in nested objects
+        strength: undefined,
+        agility: undefined,
+        stamina: undefined,
+        personality: undefined,
+        intelligence: undefined,
+        luck: undefined,
+        savingThrowFortitude: undefined,
+        savingThrowReflex: undefined,
+        savingThrowWillpower: undefined
+      };
+    });
+    
+    return convertedPlayers as Player[];
+  }
+  
+  return [];
 }
 
 /**
@@ -116,7 +139,43 @@ export async function getPlayer(playerId: string): Promise<Player | null> {
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  
+  if (!data) return null;
+  
+  // Transform the structure to match our frontend Player type
+  const camelPlayer = snakeToCamelCase(data);
+  
+  // Create nested ability scores and saving throws objects
+  const abilityScores: AbilityScores = {
+    strength: data.strength,
+    agility: data.agility,
+    stamina: data.stamina,
+    personality: data.personality,
+    intelligence: data.intelligence,
+    luck: data.luck
+  };
+  
+  const savingThrows: SavingThrows = {
+    fortitude: data.saving_throw_fortitude,
+    reflex: data.saving_throw_reflex,
+    willpower: data.saving_throw_willpower
+  };
+  
+  return {
+    ...camelPlayer,
+    abilityScores,
+    savingThrows,
+    // Remove these properties as they're now in nested objects
+    strength: undefined,
+    agility: undefined,
+    stamina: undefined,
+    personality: undefined,
+    intelligence: undefined,
+    luck: undefined,
+    savingThrowFortitude: undefined,
+    savingThrowReflex: undefined,
+    savingThrowWillpower: undefined
+  } as Player;
 }
 
 /**
@@ -131,23 +190,24 @@ export async function getPlayerByGameAndUser(gameId: string, userId: string): Pr
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  return data ? snakeToCamelCase(data) : null;
 }
 
 /**
  * Update a player
  */
 export async function updatePlayer(playerId: string, playerData: Partial<Player>): Promise<Player> {
+  const snakeData = camelToSnakeCase(playerData);
   const { data, error } = await supabase
     .from('players')
-    .update(playerData)
+    .update(snakeData)
     .eq('id', playerId)
     .select()
     .single();
 
   if (error) throw error;
   if (!data) throw new Error(`Player with ID ${playerId} not found`);
-  return data;
+  return snakeToCamelCase(data);
 }
 
 /**
@@ -159,7 +219,7 @@ export async function getClasses(): Promise<Class[]> {
     .select('*');
 
   if (error) throw error;
-  return data || [];
+  return data ? snakeToCamelCase(data) : [];
 }
 
 /**
@@ -173,7 +233,7 @@ export async function getClass(classId: string): Promise<Class | null> {
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  return data ? snakeToCamelCase(data) : null;
 }
 
 /**
@@ -185,7 +245,7 @@ export async function getSpells(): Promise<Spell[]> {
     .select('*');
 
   if (error) throw error;
-  return data || [];
+  return data ? snakeToCamelCase(data) : [];
 }
 
 /**
@@ -199,7 +259,7 @@ export async function getSpell(spellId: string): Promise<Spell | null> {
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  return data ? snakeToCamelCase(data) : null;
 }
 
 /**
@@ -212,7 +272,7 @@ export async function getPlayerSpells(player: Player): Promise<Spell[]> {
     .eq('player_id', player.id);
 
   if (error) throw error;
-  return data?.flatMap(item => item.spells) || [];
+  return data?.flatMap(item => snakeToCamelCase(item.spells)) || [];
 }
 
 /**
@@ -224,7 +284,7 @@ export async function getItems(): Promise<Item[]> {
     .select('*');
 
   if (error) throw error;
-  return data || [];
+  return data ? snakeToCamelCase(data) : [];
 }
 
 /**
@@ -238,7 +298,7 @@ export async function getItem(itemId: string): Promise<Item | null> {
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  return data ? snakeToCamelCase(data) : null;
 }
 
 /**
@@ -251,7 +311,7 @@ export async function getPlayerItems(player: Player): Promise<Item[]> {
     .eq('player_id', player.id);
 
   if (error) throw error;
-  return data?.map(item => item.items).flat() || [];
+  return data?.map(item => snakeToCamelCase(item.items)).flat() || [];
 }
 
 /**
@@ -263,7 +323,7 @@ export async function getLootboxes(): Promise<Lootbox[]> {
     .select('*');
 
   if (error) throw error;
-  return data || [];
+  return data ? snakeToCamelCase(data) : [];
 }
 
 /**
@@ -277,7 +337,7 @@ export async function getLootbox(lootboxId: string): Promise<Lootbox | null> {
     .single();
 
   if (error && error.code !== 'PGRST116') throw error;
-  return data;
+  return data ? snakeToCamelCase(data) : null;
 }
 
 /**
@@ -290,7 +350,7 @@ export async function getPlayerLootboxes(player: Player): Promise<Lootbox[]> {
     .eq('player_id', player.id);
 
   if (error) throw error;
-  return data?.flatMap(item => item.lootboxes) || [];
+  return data?.flatMap(item => snakeToCamelCase(item.lootboxes)) || [];
 }
 
 /**
@@ -303,47 +363,24 @@ export async function getLootboxItems(lootbox: Lootbox): Promise<Item[]> {
     .eq('lootbox_id', lootbox.id);
 
   if (error) throw error;
-  return data?.flatMap(item => item.items) || [];
-}
-
-/**
- * Calculate ability score modifier
- */
-export function getAbilityModifier(score: number): number {
-  return calculateAbilityModifier(score);
-}
-
-/**
- * Calculate saving throws based on ability scores and level
- */
-export function calculateSavingThrows(player: Player) {
-  const baseValue = Math.floor(player.level / 2);
-
-  return {
-    fortitude: baseValue + getAbilityModifier(player.stamina),
-    reflex: baseValue + getAbilityModifier(player.agility),
-    willpower: baseValue + getAbilityModifier(player.personality),
-  };
+  return data?.flatMap(item => snakeToCamelCase(item.items)) || [];
 }
 
 /**
  * Add item to player
  */
 export async function addItemToPlayer(playerId: string, itemId: string): Promise<Player> {
-  // First check if the player exists
   const player = await getPlayer(playerId);
   if (!player) {
     throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // Insert into the join table
   const { error } = await supabase
     .from('player_items')
     .insert({ player_id: playerId, item_id: itemId });
 
   if (error) throw error;
 
-  // Return the updated player
   return player;
 }
 
@@ -351,13 +388,11 @@ export async function addItemToPlayer(playerId: string, itemId: string): Promise
  * Remove item from player
  */
 export async function removeItemFromPlayer(playerId: string, itemId: string): Promise<Player> {
-  // First check if the player exists
   const player = await getPlayer(playerId);
   if (!player) {
     throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // Delete from the join table
   const { error } = await supabase
     .from('player_items')
     .delete()
@@ -366,7 +401,6 @@ export async function removeItemFromPlayer(playerId: string, itemId: string): Pr
 
   if (error) throw error;
 
-  // Return the updated player
   return player;
 }
 
@@ -374,20 +408,17 @@ export async function removeItemFromPlayer(playerId: string, itemId: string): Pr
  * Add spell to player
  */
 export async function addSpellToPlayer(playerId: string, spellId: string): Promise<Player> {
-  // First check if the player exists
   const player = await getPlayer(playerId);
   if (!player) {
     throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // Insert into the join table
   const { error } = await supabase
     .from('player_spells')
     .insert({ player_id: playerId, spell_id: spellId });
 
   if (error) throw error;
 
-  // Return the updated player
   return player;
 }
 
@@ -395,13 +426,11 @@ export async function addSpellToPlayer(playerId: string, spellId: string): Promi
  * Remove lootbox from player
  */
 export async function removeLootboxFromPlayer(playerId: string, lootboxId: string): Promise<Player> {
-  // First check if the player exists
   const player = await getPlayer(playerId);
   if (!player) {
     throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // Delete from the join table
   const { error } = await supabase
     .from('player_lootboxes')
     .delete()
@@ -410,7 +439,6 @@ export async function removeLootboxFromPlayer(playerId: string, lootboxId: strin
 
   if (error) throw error;
 
-  // Return the updated player
   return player;
 }
 
@@ -418,16 +446,13 @@ export async function removeLootboxFromPlayer(playerId: string, lootboxId: strin
  * Update player health
  */
 export async function updatePlayerHealth(playerId: string, health: number): Promise<Player> {
-  // Get the player to check maxHealth
   const player = await getPlayer(playerId);
   if (!player) {
     throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // Calculate the new health value within bounds
-  const newHealth = Math.min(Math.max(health, 0), player.max_health);
+  const newHealth = Math.min(Math.max(health, 0), player.maxHealth);
 
-  // Update the player
   const { data, error } = await supabase
     .from('players')
     .update({ health: newHealth })
@@ -438,17 +463,15 @@ export async function updatePlayerHealth(playerId: string, health: number): Prom
   if (error) throw error;
   if (!data) throw new Error(`Player with ID ${playerId} not found`);
   
-  return data;
+  return snakeToCamelCase(data);
 }
 
 /**
  * Update player gold
  */
 export async function updatePlayerGold(playerId: string, gold: number): Promise<Player> {
-  // Ensure gold is not negative
   const newGold = Math.max(gold, 0);
 
-  // Update the player
   const { data, error } = await supabase
     .from('players')
     .update({ gold: newGold })
@@ -459,7 +482,7 @@ export async function updatePlayerGold(playerId: string, gold: number): Promise<
   if (error) throw error;
   if (!data) throw new Error(`Player with ID ${playerId} not found`);
   
-  return data;
+  return snakeToCamelCase(data);
 }
 
 /**
@@ -470,11 +493,9 @@ export async function updatePlayerFollowers(
   followers: number,
   trendingFollowers: number,
 ): Promise<Player> {
-  // Ensure values are not negative
   const newFollowers = Math.max(followers, 0);
   const newTrendingFollowers = Math.max(trendingFollowers, 0);
 
-  // Update the player
   const { data, error } = await supabase
     .from('players')
     .update({ 
@@ -488,27 +509,23 @@ export async function updatePlayerFollowers(
   if (error) throw error;
   if (!data) throw new Error(`Player with ID ${playerId} not found`);
   
-  return data;
+  return snakeToCamelCase(data);
 }
 
 /**
  * Assign class to player
  */
 export async function assignClassToPlayer(playerId: string, classId: string): Promise<Player> {
-  // Check if player exists
   const player = await getPlayer(playerId);
   if (!player) {
     throw new Error(`Player with ID ${playerId} not found`);
   }
 
-  // Check if class exists
   const playerClass = await getClass(classId);
   if (!playerClass) {
     throw new Error(`Class with ID ${classId} not found`);
   }
 
-  // Start a transaction to update the player and add default spells
-  // First, update the player's class
   const { data, error } = await supabase
     .from('players')
     .update({ class_id: classId })
@@ -519,7 +536,6 @@ export async function assignClassToPlayer(playerId: string, classId: string): Pr
   if (error) throw error;
   if (!data) throw new Error(`Failed to update player with ID ${playerId}`);
 
-  // Get default spells for this class
   const { data: defaultSpells, error: spellsError } = await supabase
     .from('class_default_spells')
     .select('spell_id')
@@ -527,15 +543,12 @@ export async function assignClassToPlayer(playerId: string, classId: string): Pr
 
   if (spellsError) throw spellsError;
 
-  // If there are default spells, add them to the player
   if (defaultSpells && defaultSpells.length > 0) {
-    // First, remove existing spells
     await supabase
       .from('player_spells')
       .delete()
       .eq('player_id', playerId);
 
-    // Then add default spells
     const spellInserts = defaultSpells.map(spell => ({
       player_id: playerId,
       spell_id: spell.spell_id
@@ -548,24 +561,17 @@ export async function assignClassToPlayer(playerId: string, classId: string): Pr
     if (insertError) throw insertError;
   }
 
-  return data;
+  return snakeToCamelCase(data);
 }
 
 /**
  * Update player ability scores
  */
-export async function updatePlayerAbilityScores(playerId: string, abilityScores: Partial<{
-  strength: number;
-  agility: number;
-  stamina: number;
-  personality: number;
-  intelligence: number;
-  luck: number;
-}>): Promise<Player> {
-  // Update the player
+export async function updatePlayerAbilityScores(playerId: string, abilityScores: Partial<AbilityScores>): Promise<Player> {
+  const snakeScores = camelToSnakeCase(abilityScores);
   const { data, error } = await supabase
     .from('players')
-    .update(abilityScores)
+    .update(snakeScores)
     .eq('id', playerId)
     .select()
     .single();
@@ -573,21 +579,17 @@ export async function updatePlayerAbilityScores(playerId: string, abilityScores:
   if (error) throw error;
   if (!data) throw new Error(`Player with ID ${playerId} not found`);
   
-  return data;
+  return snakeToCamelCase(data);
 }
 
 /**
  * Update player saving throws
  */
-export async function updatePlayerSavingThrows(playerId: string, savingThrows: Partial<{
-  saving_throw_fortitude: number;
-  saving_throw_reflex: number;
-  saving_throw_willpower: number;
-}>): Promise<Player> {
-  // Update the player
+export async function updatePlayerSavingThrows(playerId: string, savingThrows: Partial<SavingThrows>): Promise<Player> {
+  const snakeThrows = camelToSnakeCase(savingThrows);
   const { data, error } = await supabase
     .from('players')
-    .update(savingThrows)
+    .update(snakeThrows)
     .eq('id', playerId)
     .select()
     .single();
@@ -595,14 +597,13 @@ export async function updatePlayerSavingThrows(playerId: string, savingThrows: P
   if (error) throw error;
   if (!data) throw new Error(`Player with ID ${playerId} not found`);
   
-  return data;
+  return snakeToCamelCase(data);
 }
 
 /**
  * Delete player
  */
 export async function deletePlayer(playerId: string): Promise<void> {
-  // Delete the player
   const { error } = await supabase
     .from('players')
     .delete()

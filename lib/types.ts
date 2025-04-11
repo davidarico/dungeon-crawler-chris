@@ -10,6 +10,7 @@ export interface Game {
   id: string
   name: string
   dmId: string // User ID of the Dungeon Master
+  isDM?: boolean // Flag to indicate if the current user is the DM
 }
 
 export interface AbilityScores {

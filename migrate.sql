@@ -61,8 +61,7 @@ CREATE TABLE lootboxes (
 CREATE TABLE games (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
-  dm_id TEXT,                 -- References a user (create users table if needed)
-  is_dm BOOLEAN NOT NULL
+  dm_id TEXT                  -- References a user (create users table if needed)
 );
 
 -- Create players table
