@@ -12,6 +12,17 @@ DROP TABLE IF EXISTS items;
 DROP TABLE IF EXISTS classes;
 DROP TABLE IF EXISTS spells;
 DROP TABLE IF EXISTS weapons;
+DROP TABLE IF EXISTS users;
+
+-- Create users table for authentication
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,               -- Auth provider ID (Google user ID)
+  email TEXT UNIQUE NOT NULL,        -- User's email address
+  name TEXT,                         -- User's display name
+  image TEXT,                        -- URL to user's profile image
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_login TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
 -- Create spells table
 CREATE TABLE spells (

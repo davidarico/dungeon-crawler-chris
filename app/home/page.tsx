@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { getUserById } from "@/lib/db/user";
 import HomePage from "../(protected)/page";
 
 // Configure the auth options for consistency with the route handler
@@ -23,7 +24,13 @@ export default async function ProtectedHomePage() {
   if (!session) {
     redirect("/login");
   }
+
+  // Fetch user data from Supabase to get the profile image
+  let userData = null;
+  if (session.user?.id) {
+    userData = await getUserById(session.user.id);
+  }
   
-  // Render the protected home page component
-  return <HomePage />;
+  // Render the protected home page component and pass the user data
+  return <HomePage initialUserData={userData} />;
 }

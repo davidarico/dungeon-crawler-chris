@@ -49,6 +49,7 @@
 .torch-title {
   position: relative;
   text-shadow: 0 0 10px rgba(255, 165, 0, 0.7), 0 0 20px rgba(255, 165, 0, 0.5);
+  display: inline-block; /* Ensures the title is properly wrapped around the text */
 }
 
 .torch-title::before,
@@ -56,25 +57,38 @@
   content: "";
   position: absolute;
   top: 50%;
-  width: 30px;
-  height: 60px;
-  background: radial-gradient(
-    ellipse at center,
-    rgba(255, 165, 0, 0.8) 0%,
-    rgba(255, 69, 0, 0.5) 60%,
-    rgba(0, 0, 0, 0) 100%
-  );
-  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  width: 40px; /* Width to accommodate the GIF */
+  height: 80px; /* Height to accommodate the GIF */
   transform: translateY(-50%);
-  animation: flicker 1.5s infinite alternate;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  mix-blend-mode: screen; /* This helps blend the torch with the background */
+  filter: brightness(1.2) contrast(1.1); /* Enhances the torch brightness */
 }
 
-.torch-title::before {
-  left: -40px;
-}
-
+/* Add separate elements for the glow effect */
+.torch-title::before,
 .torch-title::after {
-  right: -40px;
+  background-image: url('/images/torch.gif');
+}
+
+/* Left torch */
+.torch-title::before {
+  left: -50px;
+}
+
+/* Right torch */
+.torch-title::after {
+  right: -50px;
+}
+
+.torch-title::after
+.torch-title::before {
+  content: "";
+  position: absolute;
+  background-image: url('/images/torch.gif');
+  left: -50px;
 }
 
 @keyframes flicker {
