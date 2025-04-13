@@ -4,7 +4,7 @@ Created and maintained by Chris and David
 
 ## TODO
 - [X] Add Google Login
-- [ ] Transition from Mock Data to Supabase
+- [/] Transition from Mock Data to Supabase (In Progress)
 - [ ] Rework Item List to Allow for Multiple Filters
 - [ ] Change Gold to Crawler Credit
 - [ ] Rework Inventory to have Separate Sections for:

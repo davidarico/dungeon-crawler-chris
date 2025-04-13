@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { 
   Game, Player, Class, Spell, Item, Lootbox, 
-  AbilityScores, SavingThrows
+  AbilityScores, SavingThrows, PlayerWithRelations
 } from './types';
 import { snakeToCamelCase, camelToSnakeCase } from './utils';
 
@@ -74,9 +74,51 @@ export async function getGame(gameId: string, userId?: string): Promise<Game | n
 }
 
 /**
+ * Create a new game
+ * @param name The name of the game
+ * @param dmId The user ID of the Dungeon Master
+ */
+export async function createGame(name: string, dmId: string): Promise<Game> {
+  try {
+    console.log(`Creating game with name: ${name}, DM ID: ${dmId}`);
+    
+    // Generate a UUID for the new game
+    const gameId = crypto.randomUUID();
+    
+    const { data, error } = await supabase
+      .from('games')
+      .insert({ id: gameId, name, dm_id: dmId })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error creating game:', error);
+      throw error;
+    }
+    
+    if (!data) {
+      console.error('No data returned when creating game');
+      throw new Error('Failed to create game - no data returned');
+    }
+    
+    console.log('Game created successfully:', data);
+    
+    // Return the game with isDM set to true since the creator is the DM
+    const camelGame = snakeToCamelCase(data);
+    return {
+      ...camelGame,
+      isDM: true
+    };
+  } catch (error) {
+    console.error('Error in createGame function:', error);
+    throw error;
+  }
+}
+
+/**
  * Get players for a specific game
  */
-export async function getGamePlayers(gameId: string): Promise<Player[]> {
+export async function getGamePlayers(gameId: string): Promise<PlayerWithRelations[]> {
   const { data, error } = await supabase
     .from('players')
     .select('*')
@@ -86,7 +128,7 @@ export async function getGamePlayers(gameId: string): Promise<Player[]> {
   
   // Transform the structure to match our frontend Player type
   if (data && data.length > 0) {
-    const convertedPlayers = data.map(player => {
+    const convertedPlayers = await Promise.all(data.map(async player => {
       const camelPlayer = snakeToCamelCase(player);
       
       // Create nested ability scores and saving throws objects
@@ -105,10 +147,38 @@ export async function getGamePlayers(gameId: string): Promise<Player[]> {
         willpower: player.saving_throw_willpower
       };
       
+      // Fetch player's spells
+      const spellsResponse = await supabase
+        .from('player_spells')
+        .select('spell_id')
+        .eq('player_id', player.id);
+      
+      const spellIds = spellsResponse.error ? [] : spellsResponse.data.map(s => s.spell_id);
+      
+      // Fetch player's items
+      const itemsResponse = await supabase
+        .from('player_items')
+        .select('item_id')
+        .eq('player_id', player.id);
+      
+      const itemIds = itemsResponse.error ? [] : itemsResponse.data.map(i => i.item_id);
+      
+      // Fetch player's lootboxes
+      const lootboxesResponse = await supabase
+        .from('player_lootboxes')
+        .select('lootbox_id')
+        .eq('player_id', player.id);
+      
+      const lootboxIds = lootboxesResponse.error ? [] : lootboxesResponse.data.map(l => l.lootbox_id);
+      
       return {
         ...camelPlayer,
         abilityScores,
         savingThrows,
+        // Add relations arrays
+        spells: spellIds,
+        items: itemIds,
+        lootboxes: lootboxIds,
         // Remove these properties as they're now in nested objects
         strength: undefined,
         agility: undefined,
@@ -120,9 +190,9 @@ export async function getGamePlayers(gameId: string): Promise<Player[]> {
         savingThrowReflex: undefined,
         savingThrowWillpower: undefined
       };
-    });
+    }));
     
-    return convertedPlayers as Player[];
+    return convertedPlayers as PlayerWithRelations[];
   }
   
   return [];
@@ -265,7 +335,28 @@ export async function getSpell(spellId: string): Promise<Spell | null> {
 /**
  * Get spells for a player
  */
-export async function getPlayerSpells(player: Player): Promise<Spell[]> {
+export async function getPlayerSpells(player: Player | PlayerWithRelations): Promise<Spell[]> {
+  // If the player already has spells property (it's a PlayerWithRelations)
+  if ('spells' in player && Array.isArray(player.spells)) {
+    // If spells contains Spell objects, return them
+    if (player.spells.length > 0 && typeof player.spells[0] === 'object') {
+      return player.spells as Spell[];
+    }
+    
+    // If spells contains just IDs, fetch the full spell objects
+    const spellIds = player.spells as string[];
+    if (spellIds.length === 0) return [];
+    
+    const { data, error } = await supabase
+      .from('spells')
+      .select('*')
+      .in('id', spellIds);
+      
+    if (error) throw error;
+    return data ? snakeToCamelCase(data) : [];
+  }
+  
+  // Original implementation for when player doesn't have spells property
   const { data, error } = await supabase
     .from('player_spells')
     .select('spells(*)')
@@ -304,7 +395,28 @@ export async function getItem(itemId: string): Promise<Item | null> {
 /**
  * Get items for a player
  */
-export async function getPlayerItems(player: Player): Promise<Item[]> {
+export async function getPlayerItems(player: Player | PlayerWithRelations): Promise<Item[]> {
+  // If the player already has items property (it's a PlayerWithRelations)
+  if ('items' in player && Array.isArray(player.items)) {
+    // If items contains Item objects, return them
+    if (player.items.length > 0 && typeof player.items[0] === 'object') {
+      return player.items as Item[];
+    }
+    
+    // If items contains just IDs, fetch the full item objects
+    const itemIds = player.items as string[];
+    if (itemIds.length === 0) return [];
+    
+    const { data, error } = await supabase
+      .from('items')
+      .select('*')
+      .in('id', itemIds);
+      
+    if (error) throw error;
+    return data ? snakeToCamelCase(data) : [];
+  }
+  
+  // Original implementation for when player doesn't have items property
   const { data, error } = await supabase
     .from('player_items')
     .select('items(*)')
@@ -343,7 +455,28 @@ export async function getLootbox(lootboxId: string): Promise<Lootbox | null> {
 /**
  * Get lootboxes for a player
  */
-export async function getPlayerLootboxes(player: Player): Promise<Lootbox[]> {
+export async function getPlayerLootboxes(player: Player | PlayerWithRelations): Promise<Lootbox[]> {
+  // If the player already has lootboxes property (it's a PlayerWithRelations)
+  if ('lootboxes' in player && Array.isArray(player.lootboxes)) {
+    // If lootboxes contains Lootbox objects, return them
+    if (player.lootboxes.length > 0 && typeof player.lootboxes[0] === 'object') {
+      return player.lootboxes as Lootbox[];
+    }
+    
+    // If lootboxes contains just IDs, fetch the full lootbox objects
+    const lootboxIds = player.lootboxes as string[];
+    if (lootboxIds.length === 0) return [];
+    
+    const { data, error } = await supabase
+      .from('lootboxes')
+      .select('*')
+      .in('id', lootboxIds);
+      
+    if (error) throw error;
+    return data ? snakeToCamelCase(data) : [];
+  }
+  
+  // Original implementation for when player doesn't have lootboxes property
   const { data, error } = await supabase
     .from('player_lootboxes')
     .select('lootboxes(*)')
