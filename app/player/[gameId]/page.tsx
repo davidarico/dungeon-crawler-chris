@@ -25,6 +25,7 @@ import { WeaponDetails } from "@/components/weapon-details"
 import { FollowersCard } from "@/components/followers-card"
 import { GoldCard } from "@/components/gold-card"
 import * as api from "@/lib/api"
+import { getSession } from "next-auth/react"
 
 export default function PlayerPage() {
   const params = useParams()
@@ -52,51 +53,64 @@ export default function PlayerPage() {
   const lootboxRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true)
-      setError(null)
-
+    async function fetchData() {
       try {
+        // Get the session using the non-hook method
+        const session = await getSession();
+        const userId = session?.user?.id;
+        
         // Get game data
-        const gameData = await api.getGame(gameId)
+        const gameData = await api.getGame(gameId, userId);
         if (!gameData) {
-          router.push("/")
-          return
+          router.push("/");
+          return;
         }
-        setGame(gameData)
-
-        // Get player data - in a real app, this would use the authenticated user's ID
-        const playerData = await api.getPlayerByGameAndUser(gameId, "user-1")
-        if (!playerData) {
-          router.push("/")
-          return
+        
+        // If the user is the DM, redirect to the DM page
+        if (gameData.isDM) {
+          router.push(`/dm/${gameId}`);
+          return;
         }
-        setPlayer(playerData)
-
+        
+        setGame(gameData);
+        
+        // Get player data
+        let playerData = null;
+        if (userId) {
+          playerData = await api.getPlayerByGameAndUser(gameId, userId);
+        }
+        
+        if (playerData) {
+          setPlayer(playerData);
+        } else {
+          // No player found for this user/game - show creation form
+          setError("No player found for this user/game.");
+        }
+        
         // Get player class if available
-        if (playerData.classId) {
-          const classData = await api.getClass(playerData.classId)
-          setPlayerClass(classData)
+        if (playerData?.classId) {
+          const classData = await api.getClass(playerData.classId);
+          setPlayerClass(classData);
         }
 
         // Get player items, spells, and lootboxes
-        const items = await api.getPlayerItems(playerData)
-        const spells = await api.getPlayerSpells(playerData)
-        const lootboxes = await api.getPlayerLootboxes(playerData)
+        const items = await api.getPlayerItems(playerData);
+        const spells = await api.getPlayerSpells(playerData);
+        const lootboxes = await api.getPlayerLootboxes(playerData);
 
-        setPlayerItems(items)
-        setPlayerSpells(spells)
-        setPlayerLootboxes(lootboxes)
-      } catch (err) {
-        console.error("Error loading data:", err)
-        setError("Failed to load game data. Please try again.")
+        setPlayerItems(items);
+        setPlayerSpells(spells);
+        setPlayerLootboxes(lootboxes);
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+        router.push("/");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
 
-    loadData()
-  }, [gameId, router])
+    fetchData();
+  }, [gameId, router]);
 
   const refreshPlayerData = async () => {
     if (!player) return

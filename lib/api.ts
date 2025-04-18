@@ -335,7 +335,10 @@ export async function getSpell(spellId: string): Promise<Spell | null> {
 /**
  * Get spells for a player
  */
-export async function getPlayerSpells(player: Player | PlayerWithRelations): Promise<Spell[]> {
+export async function getPlayerSpells(player: Player | PlayerWithRelations | null | undefined): Promise<Spell[]> {
+  // Return empty array if player is null or undefined
+  if (!player) return [];
+  
   // If the player already has spells property (it's a PlayerWithRelations)
   if ('spells' in player && Array.isArray(player.spells)) {
     // If spells contains Spell objects, return them
@@ -395,7 +398,10 @@ export async function getItem(itemId: string): Promise<Item | null> {
 /**
  * Get items for a player
  */
-export async function getPlayerItems(player: Player | PlayerWithRelations): Promise<Item[]> {
+export async function getPlayerItems(player: Player | PlayerWithRelations | null | undefined): Promise<Item[]> {
+  // Return empty array if player is null or undefined
+  if (!player) return [];
+  
   // If the player already has items property (it's a PlayerWithRelations)
   if ('items' in player && Array.isArray(player.items)) {
     // If items contains Item objects, return them
@@ -455,7 +461,10 @@ export async function getLootbox(lootboxId: string): Promise<Lootbox | null> {
 /**
  * Get lootboxes for a player
  */
-export async function getPlayerLootboxes(player: Player | PlayerWithRelations): Promise<Lootbox[]> {
+export async function getPlayerLootboxes(player: Player | PlayerWithRelations | null | undefined): Promise<Lootbox[]> {
+  // Return empty array if player is null or undefined
+  if (!player) return [];
+  
   // If the player already has lootboxes property (it's a PlayerWithRelations)
   if ('lootboxes' in player && Array.isArray(player.lootboxes)) {
     // If lootboxes contains Lootbox objects, return them

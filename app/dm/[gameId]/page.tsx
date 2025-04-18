@@ -60,6 +60,7 @@ import { SavingThrowsCard } from "@/components/saving-throws-card"
 import { FollowersCard } from "@/components/followers-card"
 import { GoldCard } from "@/components/gold-card"
 import { Game, Player, Class, Spell, Item, Lootbox } from "@/lib/types"
+import { getSession } from "next-auth/react"
 
 export default function DMPage() {
   const params = useParams()
@@ -95,9 +96,9 @@ export default function DMPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // Import the session so we can pass the user ID
-        const { data: session } = await import('next-auth/react').then(mod => ({ data: mod.useSession() }));
-        const userId = session?.data?.user?.id;
+        // Get the session using the non-hook method
+        const session = await getSession();
+        const userId = session?.user?.id;
         
         // Pass the user ID to getGame to determine if they're the DM
         const gameData = await getGame(gameId, userId);
