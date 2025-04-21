@@ -5,10 +5,11 @@ Created and maintained by Chris and David
 ## TODO
 - [X] Add Google Login
 - [/] Transition from Mock Data to Supabase (In Progress)
+- [ ] Add Item chat to create new items for the game
 - [ ] Rework Item List to Allow for Multiple Filters
 - [ ] Change Gold to Crawler Credit
 - [ ] Rework Inventory to have Separate Sections for:
-       1. Weapons
+    1. Weapons
 	2. Sheilds
 	3. Head
 	4. Chest

@@ -6,13 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getGame } from "@/lib/api"
+import { getGame, createPlayer, getPlayerByGameAndUser } from "@/lib/api"
 import { Game } from "@/lib/types"
 import { Loader2 } from "lucide-react"
+import { useSession } from "next-auth/react"
+import { toast } from "@/components/ui/use-toast"
 
 export default function InvitePage() {
   const params = useParams()
   const router = useRouter()
+  const { data: session } = useSession()
   const gameId = params.gameId as string
 
   const [game, setGame] = useState<Game | null>(null)
@@ -21,36 +24,82 @@ export default function InvitePage() {
   const [isPageLoading, setIsPageLoading] = useState(true)
 
   useEffect(() => {
-    async function fetchGame() {
+    async function fetchGameAndCheckPlayer() {
       try {
         setIsPageLoading(true)
         const gameData = await getGame(gameId)
+        
         if (!gameData) {
+          toast({
+            title: "Game not found",
+            description: "The game you're trying to join doesn't exist.",
+            variant: "destructive",
+          })
           router.push("/")
           return
         }
+        
         setGame(gameData)
+        
+        // Check if the user is already a player in this game
+        if (session?.user?.id) {
+          const existingPlayer = await getPlayerByGameAndUser(gameId, session.user.id)
+          
+          if (existingPlayer) {
+            // User is already a player in this game, redirect to player page
+            toast({
+              title: "Already joined",
+              description: "You're already a player in this game.",
+            })
+            router.push(`/player/${gameId}`)
+            return
+          }
+        }
       } catch (error) {
         console.error("Failed to fetch game:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load game information. Please try again.",
+          variant: "destructive",
+        })
         router.push("/")
       } finally {
         setIsPageLoading(false)
       }
     }
 
-    fetchGame()
-  }, [gameId, router])
+    if (session?.user?.id) {
+      fetchGameAndCheckPlayer()
+    } else {
+      setIsPageLoading(false)
+    }
+  }, [gameId, router, session])
 
-  const handleJoinGame = () => {
-    if (!playerName.trim()) return
+  const handleJoinGame = async () => {
+    if (!playerName.trim() || !session?.user?.id) return
 
     setIsLoading(true)
 
-    // In a real app, this would be an API call to join the game
-    setTimeout(() => {
-      // Simulate API call
+    try {
+      // Create a new player in the database
+      await createPlayer(gameId, session.user.id, playerName.trim())
+      
+      toast({
+        title: "Success!",
+        description: "You've successfully joined the game.",
+      })
+      
+      // Redirect to player page after successful join
       router.push(`/player/${gameId}`)
-    }, 1000)
+    } catch (error) {
+      console.error("Failed to join game:", error)
+      toast({
+        title: "Failed to join",
+        description: "There was an error joining the game. Please try again.",
+        variant: "destructive",
+      })
+      setIsLoading(false)
+    }
   }
 
   if (isPageLoading) {
@@ -62,6 +111,24 @@ export default function InvitePage() {
             <CardTitle>Loading...</CardTitle>
             <CardDescription>Retrieving game information</CardDescription>
           </CardHeader>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Sign In Required</CardTitle>
+            <CardDescription>You need to be signed in to join a game.</CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button className="w-full" onClick={() => router.push("/login?callbackUrl=" + encodeURIComponent(`/invite/${gameId}`))}>
+              Sign In
+            </Button>
+          </CardFooter>
         </Card>
       </div>
     )

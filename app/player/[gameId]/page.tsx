@@ -355,7 +355,7 @@ export default function PlayerPage() {
                 </div>
 
                 <Button
-                  variant="primary"
+                  variant="default"
                   size="sm"
                   className="mt-2 bg-blue-500 hover:bg-blue-600 text-white"
                   onClick={handleLongRest}
@@ -426,32 +426,32 @@ export default function PlayerPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AbilityScoreCard
             name="Strength"
-            score={player.abilityScores.strength}
+            score={player.abilityScores?.strength || 10}
             description="Raw physical power: smashing, lifting, dragging, climbing. Affects melee attack rolls and melee damage."
           />
           <AbilityScoreCard
             name="Agility"
-            score={player.abilityScores.agility}
+            score={player.abilityScores?.agility || 10}
             description="Speed, reflexes, hand-eye coordination, and finesse. Affects Armor Class (AC), initiative rolls, ranged attacks, and Reflex saves."
           />
           <AbilityScoreCard
             name="Stamina"
-            score={player.abilityScores.stamina}
+            score={player.abilityScores?.stamina || 10}
             description="Toughness, durability, resistance to pain, poison, or disease. Affects hit points and Fortitude saves."
           />
           <AbilityScoreCard
             name="Personality"
-            score={player.abilityScores.personality}
+            score={player.abilityScores?.personality || 10}
             description="Charisma, willpower, presence, and crowd command. Affects Will saves and crowd interaction."
           />
           <AbilityScoreCard
             name="Intelligence"
-            score={player.abilityScores.intelligence}
+            score={player.abilityScores?.intelligence || 10}
             description="Smarts, memory, and problem-solving. Affects languages known and understanding puzzles, glyphs, ancient tech."
           />
           <AbilityScoreCard
             name="Luck"
-            score={player.abilityScores.luck}
+            score={player.abilityScores?.luck || 10}
             description="The wild card. Influences critical hits, fumbles, spell effects, glitches, and more. Can be burned for bonuses."
           />
         </div>
@@ -460,9 +460,9 @@ export default function PlayerPage() {
       {/* Saving Throws Section */}
       <div className="mb-6">
         <SavingThrowsCard
-          fortitude={player.savingThrows.fortitude}
-          reflex={player.savingThrows.reflex}
-          willpower={player.savingThrows.willpower}
+          fortitude={player.savingThrows?.fortitude || 0}
+          reflex={player.savingThrows?.reflex || 0}
+          willpower={player.savingThrows?.willpower || 0}
         />
       </div>
 
@@ -700,42 +700,42 @@ export default function PlayerPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <AbilityScoreCard
                 name="Strength"
-                score={player.abilityScores.strength}
+                score={player.abilityScores?.strength || 10}
                 description="Raw physical power: smashing, lifting, dragging, climbing. Affects melee attack rolls and melee damage."
                 editable={true}
                 onScoreChange={(value) => handleAbilityScoreChange("strength", value)}
               />
               <AbilityScoreCard
                 name="Agility"
-                score={player.abilityScores.agility}
+                score={player.abilityScores?.agility || 10}
                 description="Speed, reflexes, hand-eye coordination, and finesse. Affects Armor Class (AC), initiative rolls, ranged attacks, and Reflex saves."
                 editable={true}
                 onScoreChange={(value) => handleAbilityScoreChange("agility", value)}
               />
               <AbilityScoreCard
                 name="Stamina"
-                score={player.abilityScores.stamina}
+                score={player.abilityScores?.stamina || 10}
                 description="Toughness, durability, resistance to pain, poison, or disease. Affects hit points and Fortitude saves."
                 editable={true}
                 onScoreChange={(value) => handleAbilityScoreChange("stamina", value)}
               />
               <AbilityScoreCard
                 name="Personality"
-                score={player.abilityScores.personality}
+                score={player.abilityScores?.personality || 10}
                 description="Charisma, willpower, presence, and crowd command. Affects Will saves and crowd interaction."
                 editable={true}
                 onScoreChange={(value) => handleAbilityScoreChange("personality", value)}
               />
               <AbilityScoreCard
                 name="Intelligence"
-                score={player.abilityScores.intelligence}
+                score={player.abilityScores?.intelligence || 10}
                 description="Smarts, memory, and problem-solving. Affects languages known and understanding puzzles, glyphs, ancient tech."
                 editable={true}
                 onScoreChange={(value) => handleAbilityScoreChange("intelligence", value)}
               />
               <AbilityScoreCard
                 name="Luck"
-                score={player.abilityScores.luck}
+                score={player.abilityScores?.luck || 10}
                 description="The wild card. Influences critical hits, fumbles, spell effects, glitches, and more. Can be burned for bonuses."
                 editable={true}
                 onScoreChange={(value) => handleAbilityScoreChange("luck", value)}
@@ -743,9 +743,9 @@ export default function PlayerPage() {
             </div>
 
             <SavingThrowsCard
-              fortitude={player.savingThrows.fortitude}
-              reflex={player.savingThrows.reflex}
-              willpower={player.savingThrows.willpower}
+              fortitude={player.savingThrows?.fortitude || 0}
+              reflex={player.savingThrows?.reflex || 0}
+              willpower={player.savingThrows?.willpower || 0}
               editable={true}
               onSavingThrowChange={handleSavingThrowChange}
             />

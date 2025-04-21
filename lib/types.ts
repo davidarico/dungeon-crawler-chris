@@ -103,9 +103,9 @@ export interface LootboxPlayer {
 // Helper types for API responses
 export interface PlayerWithRelations extends Player {
   class?: Class
-  spells: Spell[]
-  items: Item[]
-  lootboxes: Lootbox[]
+  spells: Spell[] | string[]
+  items: Item[] | string[]
+  lootboxes: Lootbox[] | string[]
 }
 
 export interface GameWithPlayers extends Game {
