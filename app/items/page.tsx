@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Search, Loader2 } from "lucide-react"
+import { ArrowLeft, Search, Loader2, Wand2 } from "lucide-react"
 import { getItems } from "@/lib/api"
 import { Item } from "@/lib/types"
 
@@ -51,13 +51,22 @@ export default function ItemsPage() {
 
   return (
     <main className="container mx-auto px-4 py-8">
-      <div className="flex items-center mb-6">
-        <Button variant="ghost" size="icon" asChild className="mr-2">
-          <Link href="/">
-            <ArrowLeft className="h-5 w-5" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center">
+          <Button variant="ghost" size="icon" asChild className="mr-2">
+            <Link href="/">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+          </Button>
+          <h1 className="text-3xl font-bold">Items</h1>
+        </div>
+        
+        <Button asChild>
+          <Link href="/items/generate">
+            <Wand2 className="mr-2 h-4 w-4" />
+            Generate with AI
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold">Items</h1>
       </div>
 
       {loading ? (
@@ -103,7 +112,7 @@ export default function ItemsPage() {
               <Card key={item.id} className="overflow-hidden border border-border/50 bg-card/80 backdrop-blur-sm">
                 <CardHeader className="pb-2">
                   <CardTitle>{item.name}</CardTitle>
-                  <CardDescription className="italic">"{item.flavor_text}"</CardDescription>
+                  <CardDescription className="italic">"{item.flavorText}"</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="mb-4">{item.description}</p>

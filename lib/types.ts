@@ -83,11 +83,17 @@ export interface Item {
   name: string
   description: string
   flavorText: string
-  equip_slot?: string // The slot this item can be equipped to (weapon, shield, head, etc.)
+  equipSlot?: EquipSlot // The slot this item can be equipped to (camelCase version)
+  equip_slot?: string // Legacy snake_case version (keep for compatibility)
   categories: string[] // Array of category names
   // Weapon specific properties
   damage?: string
   range?: WeaponRange
+  // Armor specific properties
+  armorClass?: number
+  // General item properties
+  value?: number
+  weight?: number
   cost?: number
   special?: string[]
 }

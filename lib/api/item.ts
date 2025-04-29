@@ -26,3 +26,56 @@ export async function getItem(itemId: string): Promise<Item | null> {
   if (error && error.code !== 'PGRST116') throw error;
   return data ? snakeToCamelCase(data) : null;
 }
+
+/**
+ * Create a new item in the database
+ */
+export async function createItem(item: Omit<Item, 'id'>): Promise<Item> {
+  // Convert to snake_case for the database
+  const snakeCaseItem = {
+    name: item.name,
+    description: item.description,
+    flavor_text: item.flavorText,
+    categories: item.categories,
+    equip_slot: item.equipSlot || null,
+    value: item.value || 0,
+    weight: item.weight || 0,
+    ...(item.damage && { damage: item.damage }),
+    ...(item.armorClass && { armor_class: item.armorClass }),
+  };
+
+  const { data, error } = await supabase
+    .from('items')
+    .insert(snakeCaseItem)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return snakeToCamelCase(data);
+}
+
+/**
+ * Create multiple items in the database
+ */
+export async function createItems(items: Omit<Item, 'id'>[]): Promise<Item[]> {
+  // Convert each item to snake_case for the database
+  const snakeCaseItems = items.map(item => ({
+    name: item.name,
+    description: item.description,
+    flavor_text: item.flavorText,
+    categories: item.categories,
+    equip_slot: item.equipSlot || null,
+    value: item.value || 0,
+    weight: item.weight || 0,
+    ...(item.damage && { damage: item.damage }),
+    ...(item.armorClass && { armor_class: item.armorClass }),
+  }));
+
+  const { data, error } = await supabase
+    .from('items')
+    .insert(snakeCaseItems)
+    .select();
+
+  if (error) throw error;
+  return data ? snakeToCamelCase(data) : [];
+}

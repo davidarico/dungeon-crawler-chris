@@ -4,8 +4,9 @@ Created and maintained by Chris and David
 
 ## TODO
 - [X] Add Google Login
-- [/] Transition from Mock Data to Supabase (In Progress)
-- [ ] Add Item chat to create new items for the game
+- [X] Transition from Mock Data to Supabase (In Progress)
+- [/] Add Item chat to create new items for the game
+	- Added Item chat, I will have to feed in some item examples for the model to go off of
 - [ ] Rework Item List to Allow for Multiple Filters
 - [ ] Change Gold to Crawler Credit
 - [ ] Rework Inventory to have Separate Sections for:
