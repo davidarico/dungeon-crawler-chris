@@ -24,8 +24,10 @@ import { SavingThrowsCard } from "@/components/saving-throws-card"
 import { WeaponDetails } from "@/components/weapon-details"
 import { FollowersCard } from "@/components/followers-card"
 import { GoldCard } from "@/components/gold-card"
+import { EquipmentSlots } from "@/components/equipment-slots"
 import * as api from "@/lib/api"
 import { getSession } from "next-auth/react"
+import { Item, EquipSlot } from "@/lib/types"
 
 export default function PlayerPage() {
   const params = useParams()
@@ -40,8 +42,19 @@ export default function PlayerPage() {
   const [playerItems, setPlayerItems] = useState<any[]>([])
   const [playerSpells, setPlayerSpells] = useState<any[]>([])
   const [playerLootboxes, setPlayerLootboxes] = useState<any[]>([])
+  const [playerEquippedItems, setPlayerEquippedItems] = useState<Record<EquipSlot, Item | null>>({
+    weapon: null,
+    shield: null,
+    head: null,
+    chest: null,
+    legs: null,
+    hands: null,
+    feet: null,
+    neck: null,
+    ring: null,
+  })
   const [searchTerm, setSearchTerm] = useState("")
-  const [activeTab, setActiveTab] = useState("items")
+  const [activeTab, setActiveTab] = useState("equipment") // Changed default tab to equipment
   const [healthChange, setHealthChange] = useState(0)
   const [selectedLootbox, setSelectedLootbox] = useState<any>(null)
   const [isLootboxDialogOpen, setIsLootboxDialogOpen] = useState(false)
@@ -82,25 +95,29 @@ export default function PlayerPage() {
         
         if (playerData) {
           setPlayer(playerData);
+          
+          // Get player class if available
+          if (playerData.classId) {
+            const classData = await api.getClass(playerData.classId);
+            setPlayerClass(classData);
+          }
+
+          // Get player items, spells, and lootboxes
+          const items = await api.getPlayerItems(playerData);
+          const spells = await api.getPlayerSpells(playerData);
+          const lootboxes = await api.getPlayerLootboxes(playerData);
+          
+          // Get player equipped items
+          const equippedItems = await api.getPlayerEquippedItems(playerData.id);
+
+          setPlayerItems(items);
+          setPlayerSpells(spells);
+          setPlayerLootboxes(lootboxes);
+          setPlayerEquippedItems(equippedItems);
         } else {
           // No player found for this user/game - show creation form
           setError("No player found for this user/game.");
         }
-        
-        // Get player class if available
-        if (playerData?.classId) {
-          const classData = await api.getClass(playerData.classId);
-          setPlayerClass(classData);
-        }
-
-        // Get player items, spells, and lootboxes
-        const items = await api.getPlayerItems(playerData);
-        const spells = await api.getPlayerSpells(playerData);
-        const lootboxes = await api.getPlayerLootboxes(playerData);
-
-        setPlayerItems(items);
-        setPlayerSpells(spells);
-        setPlayerLootboxes(lootboxes);
       } catch (error) {
         console.error("Failed to fetch data:", error);
         router.push("/");
@@ -126,10 +143,12 @@ export default function PlayerPage() {
       const items = await api.getPlayerItems(updatedPlayer)
       const spells = await api.getPlayerSpells(updatedPlayer)
       const lootboxes = await api.getPlayerLootboxes(updatedPlayer)
+      const equippedItems = await api.getPlayerEquippedItems(updatedPlayer.id)
 
       setPlayerItems(items)
       setPlayerSpells(spells)
       setPlayerLootboxes(lootboxes)
+      setPlayerEquippedItems(equippedItems)
 
       // Update class if needed
       if (updatedPlayer.classId !== player.classId) {
@@ -177,6 +196,28 @@ export default function PlayerPage() {
       setPlayerItems(updatedItems)
     } catch (err) {
       console.error("Error removing item:", err)
+    }
+  }
+
+  const handleEquipItem = async (slot: EquipSlot, item: Item) => {
+    if (!player) return
+
+    try {
+      await api.equipItem(player.id, item.id, slot)
+      await refreshPlayerData()
+    } catch (err) {
+      console.error("Error equipping item:", err)
+    }
+  }
+
+  const handleUnequipItem = async (slot: EquipSlot) => {
+    if (!player) return
+
+    try {
+      await api.unequipItem(player.id, slot)
+      await refreshPlayerData()
+    } catch (err) {
+      console.error("Error unequipping item:", err)
     }
   }
 
@@ -467,12 +508,16 @@ export default function PlayerPage() {
       </div>
 
       <div className="mb-6">
-        <Tabs defaultValue="items" value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
           <div className="flex justify-between items-center mb-4">
             <TabsList>
-              <TabsTrigger value="items" className="flex items-center gap-1">
+              <TabsTrigger value="equipment" className="flex items-center gap-1">
                 <Sword className="h-4 w-4" />
-                <span>Items</span>
+                <span>Equipment</span>
+              </TabsTrigger>
+              <TabsTrigger value="items" className="flex items-center gap-1">
+                <Package className="h-4 w-4" />
+                <span>Inventory</span>
               </TabsTrigger>
               <TabsTrigger value="spells" className="flex items-center gap-1">
                 <Scroll className="h-4 w-4" />
@@ -487,13 +532,23 @@ export default function PlayerPage() {
             <div className="relative w-full max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder={`Search ${activeTab}...`}
+                placeholder={`Search ${activeTab === "equipment" ? "items" : activeTab}...`}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
           </div>
+
+          <TabsContent value="equipment" className="mt-0">
+            <EquipmentSlots 
+              playerId={player.id} 
+              equippedItems={playerEquippedItems}
+              inventoryItems={playerItems}
+              onEquip={handleEquipItem}
+              onUnequip={handleUnequipItem}
+            />
+          </TabsContent>
 
           <TabsContent value="items" className="mt-0">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -519,13 +574,27 @@ export default function PlayerPage() {
                             {category}
                           </Badge>
                         ))}
+                        {item.equip_slot && (
+                          <Badge variant="default" className="bg-blue-600">
+                            {item.equip_slot}
+                          </Badge>
+                        )}
                       </div>
                       {item.categories.includes("Weapon") && <WeaponDetails item={item} />}
                     </CardContent>
-                    <CardFooter>
+                    <CardFooter className="flex gap-2">
                       {item.categories.includes("Consumable") && (
-                        <Button variant="outline" className="w-full" onClick={() => handleRemoveItem(item.id)}>
+                        <Button variant="outline" className="flex-1" onClick={() => handleRemoveItem(item.id)}>
                           Consume
+                        </Button>
+                      )}
+                      {item.equip_slot && (
+                        <Button 
+                          variant="default" 
+                          className="flex-1"
+                          onClick={() => handleEquipItem(item.equip_slot as EquipSlot, item)}
+                        >
+                          Equip
                         </Button>
                       )}
                     </CardFooter>
@@ -676,6 +745,11 @@ export default function PlayerPage() {
                         {category}
                       </Badge>
                     ))}
+                    {lootboxResult.equip_slot && (
+                      <Badge variant="default" className="bg-blue-600">
+                        {lootboxResult.equip_slot}
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-sm">{lootboxResult.description}</p>
                   {lootboxResult.categories.includes("Weapon") && <WeaponDetails item={lootboxResult} />}

@@ -1,7 +1,7 @@
 import { supabase, snakeToCamelCase, camelToSnakeCase } from './utils';
 import {
   Player, PlayerWithRelations, AbilityScores, SavingThrows,
-  Spell, Item, Lootbox
+  Spell, Item, Lootbox, EquipSlot
 } from '../types';
 
 /**
@@ -485,4 +485,144 @@ export async function createPlayer(gameId: string, userId: string, name: string)
     console.error('Error in createPlayer function:', error);
     throw error;
   }
+}
+
+/**
+ * Get equipped items for a player
+ */
+export async function getPlayerEquippedItems(playerId: string): Promise<Record<EquipSlot, Item | null>> {
+  const { data, error } = await supabase
+    .from('player_equipped_items')
+    .select('*, items(*)')
+    .eq('player_id', playerId);
+
+  if (error) throw error;
+
+  // Initialize with all slots set to null
+  const equippedItems: Record<EquipSlot, Item | null> = {
+    weapon: null,
+    shield: null,
+    head: null,
+    chest: null,
+    legs: null,
+    hands: null,
+    feet: null,
+    neck: null,
+    ring: null
+  };
+  
+  // Fill in the equipped items
+  if (data) {
+    for (const row of data) {
+      if (row.slot && row.items) {
+        // Make sure the slot is a valid EquipSlot before assigning
+        if (Object.keys(equippedItems).includes(row.slot)) {
+          equippedItems[row.slot as EquipSlot] = snakeToCamelCase(row.items);
+        }
+      }
+    }
+  }
+
+  return equippedItems;
+}
+
+/**
+ * Equip an item to a specific slot
+ */
+export async function equipItem(playerId: string, itemId: string, slot: EquipSlot): Promise<void> {
+  // First, check if the item is in the player's inventory
+  const { data: itemCheck, error: itemCheckError } = await supabase
+    .from('player_items')
+    .select('*')
+    .eq('player_id', playerId)
+    .eq('item_id', itemId);
+
+  if (itemCheckError) throw itemCheckError;
+  if (!itemCheck || itemCheck.length === 0) {
+    throw new Error(`Item ${itemId} not found in player's inventory`);
+  }
+
+  // Check if there's already an item in this slot
+  const { data: currentlyEquipped, error: equippedError } = await supabase
+    .from('player_equipped_items')
+    .select('item_id')
+    .eq('player_id', playerId)
+    .eq('slot', slot)
+    .single();
+
+  if (equippedError && equippedError.code !== 'PGRST116') throw equippedError;
+
+  // If there's an item already equipped, unequip it first
+  if (currentlyEquipped) {
+    // Move the currently equipped item back to inventory
+    const { error: unequipError } = await supabase
+      .from('player_equipped_items')
+      .delete()
+      .eq('player_id', playerId)
+      .eq('slot', slot);
+
+    if (unequipError) throw unequipError;
+  }
+
+  // Remove the item from inventory
+  const { error: removeError } = await supabase
+    .from('player_items')
+    .delete()
+    .eq('player_id', playerId)
+    .eq('item_id', itemId);
+
+  if (removeError) throw removeError;
+
+  // Equip the new item
+  const { error: equipError } = await supabase
+    .from('player_equipped_items')
+    .insert({
+      player_id: playerId,
+      item_id: itemId,
+      slot
+    });
+
+  if (equipError) throw equipError;
+}
+
+/**
+ * Unequip an item from a specific slot
+ */
+export async function unequipItem(playerId: string, slot: EquipSlot): Promise<void> {
+  // Get the item currently in the slot
+  const { data, error } = await supabase
+    .from('player_equipped_items')
+    .select('item_id')
+    .eq('player_id', playerId)
+    .eq('slot', slot)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') {
+      // No item equipped in this slot
+      return;
+    }
+    throw error;
+  }
+
+  if (!data) return;
+
+  // Add the item back to inventory
+  const { error: addError } = await supabase
+    .from('player_items')
+    .insert({
+      player_id: playerId,
+      item_id: data.item_id
+    });
+
+  if (addError) throw addError;
+
+  // Remove the item from equipped slot
+  const { error: removeError } = await supabase
+    .from('player_equipped_items')
+    .delete()
+    .eq('player_id', playerId)
+    .eq('slot', slot);
+
+  if (removeError) throw removeError;
 }

@@ -6,30 +6,59 @@ import { Game, PlayerWithRelations, AbilityScores, SavingThrows } from '../types
  * @param userId Optional user ID to determine if the user is a DM for each game
  */
 export async function getGames(userId?: string): Promise<Game[]> {
-  const { data, error } = await supabase
+  if (!userId) {
+    return [];
+  }
+  
+  // First, get games where the user is a DM
+  const { data: dmGames, error: dmError } = await supabase
     .from('games')
-    .select('*');
+    .select('*')
+    .eq('dm_id', userId);
 
-  if (error) throw error;
+  if (dmError) throw dmError;
   
-  if (!data) return [];
+  // Then, get games where the user is a player
+  const { data: playerGamesJoin, error: playerError } = await supabase
+    .from('players')
+    .select('game_id')
+    .eq('user_id', userId);
+
+  if (playerError) throw playerError;
   
-  // Transform the data and add isDM flag if userId is provided
-  const transformedGames = data.map(game => {
-    const camelGame = snakeToCamelCase(game);
+  // If there are player games, fetch those game details
+  let playerGames: any[] = [];
+  if (playerGamesJoin && playerGamesJoin.length > 0) {
+    const gameIds = playerGamesJoin.map(record => record.game_id);
     
-    // Add isDM property if userId is provided
-    if (userId) {
-      return {
-        ...camelGame,
-        isDM: game.dm_id === userId
-      };
+    const { data: games, error } = await supabase
+      .from('games')
+      .select('*')
+      .in('id', gameIds);
+    
+    if (error) throw error;
+    
+    if (games) {
+      playerGames = games;
     }
-    
-    return camelGame;
-  });
+  }
   
-  return transformedGames;
+  // Combine both sets of games
+  const allGames = [...(dmGames || []), ...playerGames];
+  
+  // Remove duplicates (in case user is both a DM and player in same game)
+  const uniqueGames = Array.from(
+    new Map(allGames.map(game => [game.id, game])).values()
+  );
+  
+  // Transform the data and add isDM flag
+  return uniqueGames.map(game => {
+    const camelGame = snakeToCamelCase(game);
+    return {
+      ...camelGame,
+      isDM: game.dm_id === userId
+    };
+  });
 }
 
 /**
@@ -143,13 +172,27 @@ export async function getGamePlayers(gameId: string): Promise<PlayerWithRelation
       
       const spellIds = spellsResponse.error ? [] : spellsResponse.data.map(s => s.spell_id);
       
-      // Fetch player's items
+      // Fetch player's items (inventory)
       const itemsResponse = await supabase
         .from('player_items')
         .select('item_id')
         .eq('player_id', player.id);
       
       const itemIds = itemsResponse.error ? [] : itemsResponse.data.map(i => i.item_id);
+      
+      // Fetch player's equipped items
+      const equippedItemsResponse = await supabase
+        .from('player_equipped_items')
+        .select('slot, items(*)')
+        .eq('player_id', player.id);
+      
+      // Create a map of slot to equipped item
+      const equippedItems: Record<string, any> = {};
+      if (!equippedItemsResponse.error && equippedItemsResponse.data) {
+        for (const row of equippedItemsResponse.data) {
+          equippedItems[row.slot] = row.items ? snakeToCamelCase(row.items) : null;
+        }
+      }
       
       // Fetch player's lootboxes
       const lootboxesResponse = await supabase
@@ -166,6 +209,7 @@ export async function getGamePlayers(gameId: string): Promise<PlayerWithRelation
         // Add relations arrays
         spells: spellIds,
         items: itemIds,
+        equippedItems,
         lootboxes: lootboxIds,
         // Remove these properties as they're now in nested objects
         strength: undefined,

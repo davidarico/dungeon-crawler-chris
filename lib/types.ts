@@ -68,11 +68,22 @@ export interface WeaponRange {
   long?: number
 }
 
+// Equip slot types
+export type EquipSlot = "weapon" | "shield" | "head" | "chest" | "legs" | "hands" | "feet" | "neck" | "ring";
+
+export interface EquippedItem {
+  playerId: string
+  itemId: string
+  slot: EquipSlot
+  item?: Item // For convenience when loaded from the database
+}
+
 export interface Item {
   id: string
   name: string
   description: string
   flavorText: string
+  equip_slot?: string // The slot this item can be equipped to (weapon, shield, head, etc.)
   categories: string[] // Array of category names
   // Weapon specific properties
   damage?: string
@@ -105,6 +116,7 @@ export interface PlayerWithRelations extends Player {
   class?: Class
   spells: Spell[] | string[]
   items: Item[] | string[]
+  equippedItems?: Record<EquipSlot, Item> // Map of slot to equipped item
   lootboxes: Lootbox[] | string[]
 }
 
