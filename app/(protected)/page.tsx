@@ -17,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Sword, Shield, Plus, LogOut } from "lucide-react"
-import { getGames, createGame } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import { useSession, signOut } from "next-auth/react"
 import { User as UserType } from "@/lib/db/user"
@@ -36,13 +35,19 @@ export default function Home({ initialUserData }: HomePageProps = {}) {
   const { data: session } = useSession()
   const [userData, setUserData] = useState<UserType | null>(initialUserData || null)
 
-  // Fetch games from Supabase when component mounts
+  // Fetch games using the API route when component mounts
   useEffect(() => {
     async function fetchGames() {
       try {
         setLoading(true)
-        // Pass the user ID to the getGames function to determine isDM property
-        const userGames = await getGames(session?.user?.id)
+        // Use the API route instead of direct import
+        const response = await fetch('/api/games')
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch games')
+        }
+        
+        const userGames = await response.json()
         setGames(userGames)
       } catch (error) {
         console.error("Error fetching games:", error)
@@ -77,10 +82,22 @@ export default function Home({ initialUserData }: HomePageProps = {}) {
         setLoading(true);
         
         console.log("Creating game with name:", newGameName);
-        console.log("User ID:", session.user.id);
         
-        // Create a new game in the database with the current user as DM
-        const newGame = await createGame(newGameName, session.user.id);
+        // Use the API route instead of direct import
+        const response = await fetch('/api/games', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: newGameName }),
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to create game');
+        }
+        
+        const newGame = await response.json();
         
         // Update the local state with the new game
         setGames([...games, newGame]);
@@ -91,11 +108,6 @@ export default function Home({ initialUserData }: HomePageProps = {}) {
       } catch (error) {
         // Detailed error logging
         console.error("Error creating game:", error);
-        
-        if (error instanceof Error) {
-          console.error("Error message:", error.message);
-          console.error("Error stack:", error.stack);
-        }
         
         // Display a more user-friendly error message
         alert(`Failed to create game: ${error instanceof Error ? error.message : 'Unknown error'}`);

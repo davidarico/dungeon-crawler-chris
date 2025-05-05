@@ -1,28 +1,29 @@
-import { supabase, snakeToCamelCase } from './utils';
+import { db, snakeToCamelCase } from './db.server';
 import { Spell } from '../types';
 
 /**
  * Get all spells
  */
 export async function getSpells(): Promise<Spell[]> {
-  const { data, error } = await supabase
-    .from('spells')
-    .select('*');
-
-  if (error) throw error;
-  return data ? snakeToCamelCase(data) : [];
+  try {
+    const result = await db.query('SELECT * FROM spells');
+    return result.rows ? snakeToCamelCase(result.rows) : [];
+  } catch (error) {
+    console.error('Error getting spells:', error);
+    throw error;
+  }
 }
 
 /**
  * Get a specific spell by ID
  */
 export async function getSpell(spellId: string): Promise<Spell | null> {
-  const { data, error } = await supabase
-    .from('spells')
-    .select('*')
-    .eq('id', spellId)
-    .single();
-
-  if (error && error.code !== 'PGRST116') throw error;
-  return data ? snakeToCamelCase(data) : null;
+  try {
+    const result = await db.query('SELECT * FROM spells WHERE id = $1', [spellId]);
+    if (!result.rows || result.rows.length === 0) return null;
+    return snakeToCamelCase(result.rows[0]);
+  } catch (error) {
+    console.error('Error getting spell:', error);
+    throw error;
+  }
 }

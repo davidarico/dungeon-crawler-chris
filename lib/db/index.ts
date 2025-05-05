@@ -1,24 +1,22 @@
-// Database connection utility using Supabase
-import { createClient } from '@supabase/supabase-js';
+// Re-export from our server file when used in a server context
+export { db } from '../api/db.server';
 
-// Create a Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Helper function for database queries
-export async function query(sql: string, params: any[] = []) {
+// Add our own query helper that matches the signature expected elsewhere
+export const query = async (sql: string, params: any[] = []) => {
+  const { db } = await import('../api/db.server');
   try {
-    const { data, error } = await supabase.rpc('run_sql_query', {
-      query_text: sql,
-      query_params: params,
-    });
-    
-    if (error) throw error;
-    return { rows: data || [] };
+    const result = await db.query(sql, params);
+    return { rows: result.rows };
   } catch (error) {
     console.error('Database error:', error);
     throw error;
   }
+};
+
+// Error handling for client-side imports
+if (typeof window !== 'undefined') {
+  console.error(
+    'Warning: Attempted to import database utilities on the client side. ' +
+    'This module should only be used in server components or API routes.'
+  );
 }
