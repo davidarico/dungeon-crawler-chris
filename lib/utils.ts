@@ -60,3 +60,25 @@ export function camelToSnakeCase<T extends object>(obj: T): any {
   
   return obj;
 }
+
+/**
+ * Client-side function to fetch items from the API
+ */
+export async function fetchItems() {
+  const response = await fetch('/api/items');
+  if (!response.ok) {
+    throw new Error('Failed to fetch items');
+  }
+  return response.json();
+}
+
+/**
+ * Client-side function to fetch a single item by ID
+ */
+export async function fetchItem(itemId: string) {
+  const response = await fetch(`/api/items?id=${itemId}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch item');
+  }
+  return response.json();
+}

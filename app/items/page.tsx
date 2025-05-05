@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft, Search, Loader2, Wand2 } from "lucide-react"
-import { getItems } from "@/lib/api"
+import { fetchItems } from "@/lib/utils"
 import { Item } from "@/lib/types"
 
 export default function ItemsPage() {
@@ -16,12 +16,12 @@ export default function ItemsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
 
-  // Fetch items from Supabase when component mounts
+  // Fetch items from API when component mounts
   useEffect(() => {
-    async function fetchItems() {
+    async function loadItems() {
       try {
         setLoading(true)
-        const fetchedItems = await getItems()
+        const fetchedItems = await fetchItems()
         setItems(fetchedItems)
       } catch (error) {
         console.error("Error fetching items:", error)
@@ -30,7 +30,7 @@ export default function ItemsPage() {
       }
     }
 
-    fetchItems()
+    loadItems()
   }, [])
 
   // Get all unique categories
