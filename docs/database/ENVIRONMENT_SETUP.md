@@ -1,29 +1,34 @@
 # Database Environment Setup
 
 ## Prerequisites
-- Supabase account
-- Access to the project dashboard
+- PostgreSQL database (local or hosted)
 - Node.js and npm/pnpm installed
 
 ## Environment Variables
 Create a `.env` file in your project root with the following variables:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+PG_HOST=localhost
+PG_PORT=5432
+PG_DATABASE=dungeon_crawler
+PG_USER=your_postgres_username
+PG_PASSWORD=your_postgres_password
 ```
 
 ## Initial Setup Steps
 
-1. **Create Supabase Project**
-   - Go to [Supabase Dashboard](https://app.supabase.io)
-   - Create a new project
-   - Note down the project URL and anon key
+1. **Install PostgreSQL**
+   - Download and install PostgreSQL from [postgresql.org](https://www.postgresql.org/download/) or use a package manager
+   - Create a new database for your application
+   - Note down your connection details
 
 2. **Database Initialization**
-   - Navigate to the SQL editor in your Supabase dashboard
-   - Copy the contents of `/migrate.sql`
-   - Execute the SQL to create all necessary tables
+   - Connect to your PostgreSQL database using psql or a GUI tool
+   - Run the migration script to set up your tables:
+   ```bash
+   # Using psql
+   psql -U your_username -d your_database -f migrate.sql
+   ```
 
 3. **Local Development Setup**
    ```bash
@@ -32,19 +37,19 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    
    # Set up environment variables
    cp .env.example .env
-   # Edit .env with your Supabase credentials
+   # Edit .env with your PostgreSQL credentials
    ```
 
 ## Security Considerations
 
 ### Environment Variables
 - Never commit `.env` files to version control
-- Use different keys for development and production
-- Rotate keys periodically for security
+- Use different credentials for development and production
+- Consider storing production credentials in a secure environment variable manager
 
 ### Access Control
-- Set up Row Level Security (RLS) policies in Supabase
-- Configure proper authentication rules
+- Set up proper user roles and permissions in PostgreSQL
+- Use connection pooling for efficient database access
 - Limit database access to necessary operations only
 
 ## Troubleshooting
@@ -53,34 +58,35 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 1. **Connection Issues**
    - Verify environment variables are set correctly
-   - Check Supabase project status
-   - Ensure proper network access
+   - Check PostgreSQL service is running
+   - Ensure network connectivity to the database server
+   - Verify firewall settings allow the connection
 
 2. **Authentication Problems**
-   - Verify API keys are current
-   - Check user permissions in Supabase
-   - Review RLS policies
+   - Check user permissions in PostgreSQL
+   - Verify password is correct
+   - Ensure the database exists and user has access
 
 3. **Migration Failures**
    - Check SQL syntax
    - Verify table dependencies
-   - Review error logs in Supabase dashboard
+   - Review error messages from PostgreSQL
 
 ## Development Workflow
 
 1. **Local Development**
-   - Use development database
+   - Use a local PostgreSQL instance for development
    - Enable debug logging
    - Test all database operations locally
 
 2. **Testing**
-   - Create test database
-   - Use separate credentials
+   - Create separate test database
+   - Use dedicated test credentials
    - Reset database state between tests
 
 3. **Deployment**
-   - Use production database
-   - Enable enhanced security
+   - Use production database with secure configuration
+   - Enable enhanced security features
    - Monitor database performance
 
 ## Monitoring and Maintenance
@@ -89,15 +95,16 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 - Monitor database size and usage
 - Review access logs
 - Backup data regularly
-- Update security policies
+- Run VACUUM to optimize performance
 
 ### Performance Optimization
 - Review and optimize queries
-- Monitor slow queries
+- Monitor slow queries with pg_stat_statements
 - Maintain proper indexes
 - Clean up unused data
 
 ## Additional Resources
-- [Supabase Documentation](https://supabase.io/docs)
-- [Next.js with Supabase Guide](https://supabase.io/docs/guides/with-nextjs)
-- [Database Security Best Practices](https://supabase.io/docs/guides/auth)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Node.js PostgreSQL (node-postgres) Documentation](https://node-postgres.com/)
+- [Next.js with PostgreSQL Guide](https://vercel.com/guides/nextjs-prisma-postgres)
+- [Database Security Best Practices](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html)

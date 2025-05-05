@@ -1,12 +1,15 @@
 # Database Documentation
 
 ## Overview
-Dungeon Crawler Chris uses Supabase as its backend service for database management. The application implements a relational database structure to manage game data, players, items, and other game-related entities.
+Dungeon Crawler Chris uses PostgreSQL as its database management system. The application implements a relational database structure to manage game data, players, items, and other game-related entities.
 
 ## Database Configuration
-The application connects to Supabase using environment variables:
-- `NEXT_PUBLIC_SUPABASE_URL`: The URL of your Supabase instance
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: The anonymous key for public access
+The application connects to PostgreSQL using environment variables:
+- `PG_HOST`: The hostname of your PostgreSQL server
+- `PG_PORT`: The port number (default: 5432)
+- `PG_DATABASE`: The name of your database
+- `PG_USER`: The PostgreSQL username
+- `PG_PASSWORD`: The PostgreSQL password
 
 ## Database Schema
 
@@ -171,14 +174,26 @@ CREATE TABLE class_default_spells (
 - Classes can be assigned to multiple players (players table)
 
 ## Database Access
-The application uses the Supabase client for database access. The client is initialized in `lib/db/index.ts`:
+The application uses the node-postgres library for database access. The database connection is initialized in `lib/api/db.server.ts`:
 
 ```typescript
-import { createClient } from '@supabase/supabase-js';
+import { Pool, QueryResult } from 'pg';
+import format from 'pg-format';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Initialize PostgreSQL client
+const pool = new Pool({
+  host: process.env.PG_HOST,
+  port: parseInt(process.env.PG_PORT || '5432'),
+  database: process.env.PG_DATABASE,
+  user: process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
+});
+
+// Export the database interface
+export const db = {
+  query: (text: string, params?: any[]): Promise<QueryResult> => pool.query(text, params),
+  format: format
+};
 ```
 
 ## Best Practices
@@ -187,3 +202,4 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 3. Implement proper error handling for database operations
 4. Use transactions for operations that modify multiple tables
 5. Keep sensitive operations server-side in API routes
+6. Follow Next.js server/client separation patterns when accessing the database

@@ -7,11 +7,16 @@ This document explains how database migrations work in the Dungeon Crawler Chris
 The main migration file is located at `/migrate.sql` in the root directory. This file contains the complete database schema and is used for initial setup and reset operations.
 
 ## Running Migrations
-Migrations are typically run through Supabase's interface or CLI tools. The process involves:
+Migrations are run directly against the PostgreSQL database. The process involves:
 
-1. Connecting to your Supabase project
+1. Connecting to your PostgreSQL database
 2. Applying the migration SQL file
 3. Verifying the changes
+
+```bash
+# Using psql to apply migrations
+psql -U your_username -d your_database -f migrate.sql
+```
 
 ## Migration Best Practices
 1. Always backup the database before running migrations
@@ -55,9 +60,17 @@ ALTER TABLE existing_table ADD CONSTRAINT constraint_name UNIQUE (column_name);
 ## Rollback Procedures
 In case of migration failures:
 
-1. Use the Supabase dashboard to review the migration status
-2. Apply the corresponding rollback SQL if available
-3. Restore from backup if necessary
+1. Execute your rollback SQL script
+2. Restore from backup if necessary
+3. Use PostgreSQL's transaction capabilities:
+   ```sql
+   BEGIN;
+   -- Migration SQL here
+   -- If something goes wrong
+   ROLLBACK;
+   -- If everything is successful
+   COMMIT;
+   ```
 
 ## Environment-Specific Considerations
 
@@ -67,6 +80,10 @@ In case of migration failures:
 - Use seed data for testing
 
 ### Production
-- Always backup before migrating
+- Always backup before migrating:
+  ```bash
+  pg_dump -U username -d database_name > backup_$(date +%Y%m%d).sql
+  ```
 - Schedule migrations during low-traffic periods
 - Test migrations thoroughly in staging first
+- Consider using a migration tool like [dbmate](https://github.com/amacneil/dbmate) or [Flyway](https://flywaydb.org/) for more complex migration needs
