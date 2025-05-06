@@ -163,13 +163,19 @@ export async function getPlayerItems(player: Player | PlayerWithRelations | null
       return player.items as Item[];
     }
     
-    // If items contains just IDs, fetch the full item objects
-    const itemIds = player.items as unknown as string[];
+    // If items contains IDs, fetch the full item objects
+    // These might be numbers or strings (from JSON or URL params)
+    const itemIds = player.items as unknown as (string | number)[];
     if (itemIds.length === 0) return [];
     
-    const placeholders = itemIds.map((_, i) => `$${i + 1}`).join(',');
+    // Convert string IDs to numbers if they're numeric strings
+    const parsedIds = itemIds.map(id => 
+      typeof id === 'string' && /^\d+$/.test(id) ? parseInt(id, 10) : id
+    );
+    
+    const placeholders = parsedIds.map((_, i) => `$${i + 1}`).join(',');
     const query = `SELECT * FROM items WHERE id IN (${placeholders})`;
-    const result = await db.query(query, itemIds);
+    const result = await db.query(query, parsedIds);
     
     return result.rows ? snakeToCamelCase(result.rows) : [];
   }
@@ -226,16 +232,21 @@ export async function getPlayerLootboxes(player: Player | PlayerWithRelations | 
 /**
  * Add item to player
  */
-export async function addItemToPlayer(playerId: string, itemId: string): Promise<Player> {
+export async function addItemToPlayer(playerId: string, itemId: string | number): Promise<Player> {
   try {
     const player = await getPlayer(playerId);
     if (!player) {
       throw new Error(`Player with ID ${playerId} not found`);
     }
 
+    // Convert itemId to number if it's a numeric string
+    const parsedItemId = typeof itemId === 'string' && /^\d+$/.test(itemId) 
+      ? parseInt(itemId, 10) 
+      : itemId;
+
     await db.query(
       'INSERT INTO player_items (player_id, item_id) VALUES ($1, $2)',
-      [playerId, itemId]
+      [playerId, parsedItemId]
     );
 
     return player;
@@ -248,16 +259,21 @@ export async function addItemToPlayer(playerId: string, itemId: string): Promise
 /**
  * Remove item from player
  */
-export async function removeItemFromPlayer(playerId: string, itemId: string): Promise<Player> {
+export async function removeItemFromPlayer(playerId: string, itemId: string | number): Promise<Player> {
   try {
     const player = await getPlayer(playerId);
     if (!player) {
       throw new Error(`Player with ID ${playerId} not found`);
     }
 
+    // Convert itemId to number if it's a numeric string
+    const parsedItemId = typeof itemId === 'string' && /^\d+$/.test(itemId) 
+      ? parseInt(itemId, 10) 
+      : itemId;
+
     await db.query(
       'DELETE FROM player_items WHERE player_id = $1 AND item_id = $2',
-      [playerId, itemId]
+      [playerId, parsedItemId]
     );
 
     return player;
@@ -624,16 +640,21 @@ export async function getPlayerEquippedItems(playerId: string): Promise<Record<E
 /**
  * Equip an item to a specific slot
  */
-export async function equipItem(playerId: string, itemId: string, slot: EquipSlot): Promise<void> {
+export async function equipItem(playerId: string, itemId: string | number, slot: EquipSlot): Promise<void> {
   try {
+    // Convert itemId to number if it's a numeric string
+    const parsedItemId = typeof itemId === 'string' && /^\d+$/.test(itemId) 
+      ? parseInt(itemId, 10) 
+      : itemId;
+      
     // First, check if the item is in the player's inventory
     const itemCheckResult = await db.query(
       'SELECT * FROM player_items WHERE player_id = $1 AND item_id = $2',
-      [playerId, itemId]
+      [playerId, parsedItemId]
     );
 
     if (!itemCheckResult.rows || itemCheckResult.rows.length === 0) {
-      throw new Error(`Item ${itemId} not found in player's inventory`);
+      throw new Error(`Item ${parsedItemId} not found in player's inventory`);
     }
 
     // Check if there's already an item in this slot
@@ -654,13 +675,13 @@ export async function equipItem(playerId: string, itemId: string, slot: EquipSlo
     // Remove the item from inventory
     await db.query(
       'DELETE FROM player_items WHERE player_id = $1 AND item_id = $2',
-      [playerId, itemId]
+      [playerId, parsedItemId]
     );
 
     // Equip the new item
     await db.query(
       'INSERT INTO player_equipped_items (player_id, item_id, slot) VALUES ($1, $2, $3)',
-      [playerId, itemId, slot]
+      [playerId, parsedItemId, slot]
     );
   } catch (error) {
     console.error('Error equipping item:', error);

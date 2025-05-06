@@ -15,8 +15,12 @@ export async function fetchGames() {
   return response.json() as Promise<Game[]>;
 }
 
-export async function fetchGame(gameId: string) {
-  const response = await fetch(`/api/games/${gameId}`);
+export async function fetchGame(gameId: string, isInvite = false) {
+  const url = isInvite 
+    ? `/api/games/${gameId}?invite=true`
+    : `/api/games/${gameId}`;
+    
+  const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch game with ID ${gameId}`);
   }
@@ -57,6 +61,170 @@ export async function fetchPlayer(playerId: string) {
   const response = await fetch(`/api/players/${playerId}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch player with ID ${playerId}`);
+  }
+  return response.json();
+}
+
+// PLAYER DATA
+export async function fetchPlayerByGameAndUser(gameId: string) {
+  const response = await fetch(`/api/players/game-user/${gameId}`);
+  if (!response.ok) {
+    if (response.status === 404) return null;
+    throw new Error(`Failed to fetch player for game ${gameId}`);
+  }
+  return response.json();
+}
+
+export async function fetchPlayerEquipment(playerId: string) {
+  const response = await fetch(`/api/players/${playerId}/equipment`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch equipment for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function fetchPlayerItems(playerId: string) {
+  const response = await fetch(`/api/players/${playerId}/items`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch items for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function fetchPlayerSpells(playerId: string) {
+  const response = await fetch(`/api/players/${playerId}/spells`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch spells for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function fetchPlayerLootboxes(playerId: string) {
+  const response = await fetch(`/api/players/${playerId}/lootboxes`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch lootboxes for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function removeItemFromPlayer(playerId: string, itemId: string) {
+  const response = await fetch(`/api/players/${playerId}/items?itemId=${itemId}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to remove item ${itemId} from player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function addItemToPlayer(playerId: string, itemId: string) {
+  const response = await fetch(`/api/players/${playerId}/items`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId })
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to add item ${itemId} to player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function removeLootboxFromPlayer(playerId: string, lootboxId: string) {
+  const response = await fetch(`/api/players/${playerId}/lootboxes?lootboxId=${lootboxId}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to remove lootbox ${lootboxId} from player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function updatePlayerHealth(playerId: string, health: number) {
+  const response = await fetch(`/api/players/${playerId}/health`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ health })
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update health for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function updatePlayerAbilityScores(playerId: string, abilityScores: any) {
+  const response = await fetch(`/api/players/${playerId}/ability-scores`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(abilityScores)
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update ability scores for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function updatePlayerSavingThrows(playerId: string, savingThrows: any) {
+  const response = await fetch(`/api/players/${playerId}/saving-throws`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(savingThrows)
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update saving throws for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function updatePlayerFollowers(playerId: string, followers: number, trending: number) {
+  const response = await fetch(`/api/players/${playerId}/followers`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ followers, trending })
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update followers for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function updatePlayerGold(playerId: string, gold: number) {
+  const response = await fetch(`/api/players/${playerId}/gold`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gold })
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to update gold for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function equipItem(playerId: string, itemId: string, slot: string) {
+  const response = await fetch(`/api/players/${playerId}/equipment`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ itemId, slot })
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to equip item ${itemId} for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function unequipItem(playerId: string, slot: string) {
+  const response = await fetch(`/api/players/${playerId}/equipment?slot=${slot}`, {
+    method: 'DELETE'
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to unequip item from slot ${slot} for player ${playerId}`);
+  }
+  return response.json();
+}
+
+export async function getLootboxItems(lootbox: any) {
+  const response = await fetch(`/api/lootboxes/${lootbox.id}/items`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch items for lootbox ${lootbox.id}`);
   }
   return response.json();
 }
@@ -118,7 +286,7 @@ export async function fetchItems() {
 }
 
 export async function fetchItem(itemId: string) {
-  const response = await fetch(`/api/items?id=${itemId}`);
+  const response = await fetch(`/api/items/${itemId}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch item with ID ${itemId}`);
   }
@@ -140,4 +308,36 @@ export async function fetchLootbox(lootboxId: string) {
     throw new Error(`Failed to fetch lootbox with ID ${lootboxId}`);
   }
   return response.json() as Promise<Lootbox>;
+}
+
+// PLAYER-GAME RELATIONSHIP
+export async function checkPlayerInGame(gameId: string) {
+  const response = await fetch(`/api/players/game-user?gameId=${gameId}`);
+  if (!response.ok) {
+    // Return null if there's an error or unauthorized (we'll handle this in the UI)
+    if (response.status === 401) return null;
+    throw new Error(`Failed to check player in game ${gameId}`);
+  }
+  return response.json();
+}
+
+export async function createPlayerForGame(gameId: string, name: string) {
+  const response = await fetch('/api/players/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ gameId, name })
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to create player');
+  }
+  return response.json();
+}
+
+/**
+ * Get the modifier value for an ability score
+ * This is a client-safe version of the function that can be used in components
+ */
+export function getAbilityModifier(score: number): number {
+  return Math.floor((score - 10) / 2);
 }

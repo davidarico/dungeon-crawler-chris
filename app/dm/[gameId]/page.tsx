@@ -44,36 +44,28 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  getGame,
-  getGamePlayers,
-  getClass,
-  getClasses,
-  getPlayerSpells,
-  getPlayerItems,
-  getPlayerLootboxes,
-  getItems,
-  getSpells,
-} from "@/lib/api"
 import { AbilityScoreCard } from "@/components/ability-score-card"
 import { SavingThrowsCard } from "@/components/saving-throws-card"
 import { FollowersCard } from "@/components/followers-card"
 import { GoldCard } from "@/components/gold-card"
-import { Game, Player, Class, Spell, Item, Lootbox } from "@/lib/types"
-import { getSession } from "next-auth/react"
+import { Game, PlayerWithRelations, Class, Spell, Item, Lootbox } from "@/lib/types"
+import { useSession } from "next-auth/react"
 
 export default function DMPage() {
   const params = useParams()
   const router = useRouter()
   const gameId = params.gameId as string
+  const { data: session } = useSession()
 
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [game, setGame] = useState<Game | null>(null)
-  const [players, setPlayers] = useState<Player[]>([])
+  const [players, setPlayers] = useState<PlayerWithRelations[]>([])
   const [classes, setClasses] = useState<Class[]>([])
   const [items, setItems] = useState<Item[]>([])
   const [spells, setSpells] = useState<Spell[]>([])
   const [inviteLink, setInviteLink] = useState("")
-  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
+  const [selectedPlayer, setSelectedPlayer] = useState<PlayerWithRelations | null>(null)
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false)
   const [isClassDialogOpen, setIsClassDialogOpen] = useState(false)
   const [isSpellsDialogOpen, setIsSpellsDialogOpen] = useState(false)
@@ -93,47 +85,119 @@ export default function DMPage() {
   const [selectedItems, setSelectedItems] = useState<string[]>([])
   const [selectedSpells, setSelectedSpells] = useState<string[]>([])
 
+  const getPlayerSpells = (player: PlayerWithRelations): Spell[] => {
+    if (!player.spells) return []
+    return player.spells.map(
+      (spellId) =>
+        spells.find((s) => s.id === spellId) || {
+          id: spellId,
+          name: "Unknown Spell",
+          description: "Spell details not available",
+        },
+    ) as Spell[]
+  }
+
+  const getPlayerItems = (player: PlayerWithRelations): Item[] => {
+    if (!player.items) return []
+    return player.items.map(
+      (itemId) =>
+        items.find((i) => i.id === itemId) || {
+          id: itemId,
+          name: "Unknown Item",
+          description: "Item details not available",
+          categories: [],
+          flavorText: "",
+        },
+    ) as Item[]
+  }
+
+  const getPlayerLootboxes = (player: PlayerWithRelations): Lootbox[] => {
+    if (!player.lootboxes) return []
+    return player.lootboxes.map(
+      (lootboxId) => ({ id: lootboxId, name: "Lootbox", tier: "Bronze" as const, possibleItems: [] }),
+    ) as Lootbox[]
+  }
+
   useEffect(() => {
     async function fetchData() {
       try {
-        // Get the session using the non-hook method
-        const session = await getSession();
-        const userId = session?.user?.id;
-        
-        // Pass the user ID to getGame to determine if they're the DM
-        const gameData = await getGame(gameId, userId);
-        if (!gameData) {
-          router.push("/");
-          return;
+        setIsLoading(true)
+        setError(null)
+
+        const response = await fetch(`/api/games/${gameId}/dm-data`)
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push("/login")
+            return
+          }
+
+          if (response.status === 403) {
+            router.push(`/player/${gameId}`)
+            return
+          }
+
+          if (response.status === 404) {
+            router.push("/")
+            return
+          }
+
+          const errorData = await response.json()
+          throw new Error(errorData.error || "Failed to load DM data")
         }
 
-        // If the user isn't the DM for this game, redirect them
-        if (!gameData.isDM) {
-          router.push(`/player/${gameId}`);
-          return;
-        }
+        const data = await response.json()
 
-        setGame(gameData);
-        setPlayers(await getGamePlayers(gameId));
-        setClasses(await getClasses());
-        setItems(await getItems());
-        setSpells(await getSpells());
+        setGame(data.game)
+        setPlayers(data.players)
+        setClasses(data.classes)
+        setItems(data.items)
+        setSpells(data.spells)
 
-        // Generate invite link
-        const baseUrl = window.location.origin;
-        setInviteLink(`${baseUrl}/invite/${gameId}`);
+        const baseUrl = window.location.origin
+        setInviteLink(`${baseUrl}/invite/${gameId}`)
       } catch (error) {
-        console.error("Failed to fetch data:", error);
-        router.push("/");
+        console.error("Failed to fetch data:", error)
+        setError(error instanceof Error ? error.message : "An unknown error occurred")
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    fetchData();
+    fetchData()
   }, [gameId, router])
 
   const handleCopyInviteLink = () => {
     navigator.clipboard.writeText(inviteLink)
-    // In a real app, you would show a toast notification
+  }
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
+        <p className="text-muted-foreground">Loading game data...</p>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center h-[50vh]">
+        <div className="text-destructive mb-4">Error: {error}</div>
+        <Button onClick={() => window.location.reload()}>Try Again</Button>
+      </div>
+    )
+  }
+
+  if (!game) {
+    return (
+      <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center h-[50vh]">
+        <div className="text-muted-foreground mb-4">Game not found</div>
+        <Button asChild>
+          <Link href="/">Return to Dashboard</Link>
+        </Button>
+      </div>
+    )
   }
 
   const handleLevelUp = (playerId: string) => {
@@ -190,14 +254,25 @@ export default function DMPage() {
     if (!selectedPlayer || selectedItems.length === 0) return
 
     setPlayers(
-      players.map((player) =>
-        player.id === selectedPlayer.id
-          ? {
-              ...player,
-              items: [...player.items, ...selectedItems],
-            }
-          : player,
-      ),
+      players.map((player) => {
+        if (player.id === selectedPlayer.id) {
+          // Create a safe copy of the existing items as string[], handling both array types
+          const existingItems = player.items 
+            ? (Array.isArray(player.items) 
+                ? (typeof player.items[0] === 'string' 
+                    ? player.items as string[] 
+                    : (player.items as Item[]).map(item => item.id))
+                : [])
+            : [];
+          
+          // Return the player with the updated items array
+          return {
+            ...player,
+            items: [...existingItems, ...selectedItems]
+          };
+        }
+        return player;
+      })
     )
 
     setSelectedItems([])
@@ -208,14 +283,25 @@ export default function DMPage() {
     if (!selectedPlayer || selectedSpells.length === 0) return
 
     setPlayers(
-      players.map((player) =>
-        player.id === selectedPlayer.id
-          ? {
-              ...player,
-              spells: [...player.spells, ...selectedSpells],
-            }
-          : player,
-      ),
+      players.map((player) => {
+        if (player.id === selectedPlayer.id) {
+          // Create a safe copy of the existing spells as string[], handling both array types
+          const existingSpells = player.spells 
+            ? (Array.isArray(player.spells) 
+                ? (typeof player.spells[0] === 'string' 
+                    ? player.spells as string[] 
+                    : (player.spells as Spell[]).map(spell => spell.id))
+                : [])
+            : [];
+          
+          // Return the player with the updated spells array
+          return {
+            ...player,
+            spells: [...existingSpells, ...selectedSpells]
+          };
+        }
+        return player;
+      })
     )
 
     setSelectedSpells([])
@@ -305,10 +391,6 @@ export default function DMPage() {
       spell.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       spell.description.toLowerCase().includes(searchTerm.toLowerCase()),
   )
-
-  if (!game) {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>
-  }
 
   return (
     <main className="container mx-auto px-4 py-8">
@@ -834,7 +916,11 @@ export default function DMPage() {
               <div className="space-y-4">
                 {filteredSpells.map((spell) => {
                   const isSelected = selectedSpells.includes(spell.id)
-                  const alreadyHasSpell = selectedPlayer?.spells.includes(spell.id)
+                  const alreadyHasSpell = selectedPlayer?.spells
+                    ? typeof selectedPlayer.spells[0] === "string"
+                      ? (selectedPlayer.spells as string[]).includes(spell.id)
+                      : (selectedPlayer.spells as Spell[]).some((s) => s.id === spell.id)
+                    : false
 
                   return (
                     <div
@@ -843,8 +929,8 @@ export default function DMPage() {
                         alreadyHasSpell
                           ? "border-muted bg-muted/20 opacity-60"
                           : isSelected
-                            ? "border-primary bg-primary/10"
-                            : "border-border"
+                          ? "border-primary bg-primary/10"
+                          : "border-border"
                       }`}
                     >
                       <div className="flex items-start">

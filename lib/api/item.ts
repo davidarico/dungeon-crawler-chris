@@ -17,9 +17,12 @@ export async function getItems(): Promise<Item[]> {
 /**
  * Get a specific item by ID
  */
-export async function getItem(itemId: string): Promise<Item | null> {
+export async function getItem(itemId: string | number): Promise<Item | null> {
   try {
-    const result = await db.query('SELECT * FROM items WHERE id = $1', [itemId]);
+    // Convert string ID to number if it's a string that contains only digits
+    const parsedId = typeof itemId === 'string' && /^\d+$/.test(itemId) ? parseInt(itemId, 10) : itemId;
+    
+    const result = await db.query('SELECT * FROM items WHERE id = $1', [parsedId]);
     if (!result.rows || result.rows.length === 0) return null;
     return snakeToCamelCase(result.rows[0]);
   } catch (error) {

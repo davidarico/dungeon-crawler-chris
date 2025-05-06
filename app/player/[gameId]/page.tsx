@@ -25,7 +25,27 @@ import { WeaponDetails } from "@/components/weapon-details"
 import { FollowersCard } from "@/components/followers-card"
 import { GoldCard } from "@/components/gold-card"
 import { EquipmentSlots } from "@/components/equipment-slots"
-import * as api from "@/lib/api"
+import { 
+  fetchGame,
+  fetchPlayerByGameAndUser,
+  fetchClass,
+  fetchPlayerItems,
+  fetchPlayerSpells,
+  fetchPlayerLootboxes,
+  fetchPlayerEquipment,
+  fetchPlayer,
+  updatePlayerHealth,
+  updatePlayerAbilityScores,
+  updatePlayerSavingThrows,
+  updatePlayerFollowers,
+  updatePlayerGold,
+  removeItemFromPlayer,
+  addItemToPlayer,
+  removeLootboxFromPlayer,
+  equipItem,
+  unequipItem,
+  getLootboxItems
+} from "@/lib/client-utils"
 import { getSession } from "next-auth/react"
 import { Item, EquipSlot } from "@/lib/types"
 
@@ -73,7 +93,7 @@ export default function PlayerPage() {
         const userId = session?.user?.id;
         
         // Get game data
-        const gameData = await api.getGame(gameId, userId);
+        const gameData = await fetchGame(gameId);
         if (!gameData) {
           router.push("/");
           return;
@@ -90,7 +110,7 @@ export default function PlayerPage() {
         // Get player data
         let playerData = null;
         if (userId) {
-          playerData = await api.getPlayerByGameAndUser(gameId, userId);
+          playerData = await fetchPlayerByGameAndUser(gameId);
         }
         
         if (playerData) {
@@ -98,17 +118,17 @@ export default function PlayerPage() {
           
           // Get player class if available
           if (playerData.classId) {
-            const classData = await api.getClass(playerData.classId);
+            const classData = await fetchClass(playerData.classId);
             setPlayerClass(classData);
           }
 
           // Get player items, spells, and lootboxes
-          const items = await api.getPlayerItems(playerData);
-          const spells = await api.getPlayerSpells(playerData);
-          const lootboxes = await api.getPlayerLootboxes(playerData);
+          const items = await fetchPlayerItems(playerData.id);
+          const spells = await fetchPlayerSpells(playerData.id);
+          const lootboxes = await fetchPlayerLootboxes(playerData.id);
           
           // Get player equipped items
-          const equippedItems = await api.getPlayerEquippedItems(playerData.id);
+          const equippedItems = await fetchPlayerEquipment(playerData.id);
 
           setPlayerItems(items);
           setPlayerSpells(spells);
@@ -134,16 +154,16 @@ export default function PlayerPage() {
 
     try {
       // Get updated player data
-      const updatedPlayer = await api.getPlayer(player.id)
+      const updatedPlayer = await fetchPlayer(player.id)
       if (!updatedPlayer) return
 
       setPlayer(updatedPlayer)
 
       // Refresh related data
-      const items = await api.getPlayerItems(updatedPlayer)
-      const spells = await api.getPlayerSpells(updatedPlayer)
-      const lootboxes = await api.getPlayerLootboxes(updatedPlayer)
-      const equippedItems = await api.getPlayerEquippedItems(updatedPlayer.id)
+      const items = await fetchPlayerItems(updatedPlayer.id)
+      const spells = await fetchPlayerSpells(updatedPlayer.id)
+      const lootboxes = await fetchPlayerLootboxes(updatedPlayer.id)
+      const equippedItems = await fetchPlayerEquipment(updatedPlayer.id)
 
       setPlayerItems(items)
       setPlayerSpells(spells)
@@ -152,7 +172,7 @@ export default function PlayerPage() {
 
       // Update class if needed
       if (updatedPlayer.classId !== player.classId) {
-        const classData = updatedPlayer.classId ? await api.getClass(updatedPlayer.classId) : null
+        const classData = updatedPlayer.classId ? await fetchClass(updatedPlayer.classId) : null
         setPlayerClass(classData)
       }
     } catch (err) {
@@ -165,7 +185,7 @@ export default function PlayerPage() {
 
     try {
       const newHealth = Math.min(Math.max(player.health + amount, 0), player.maxHealth)
-      const updatedPlayer = await api.updatePlayerHealth(player.id, newHealth)
+      const updatedPlayer = await updatePlayerHealth(player.id, newHealth)
       setPlayer(updatedPlayer)
       setHealthChange(0) // Reset the input after applying
     } catch (err) {
@@ -177,7 +197,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      const updatedPlayer = await api.updatePlayerHealth(player.id, player.maxHealth)
+      const updatedPlayer = await updatePlayerHealth(player.id, player.maxHealth)
       setPlayer(updatedPlayer)
     } catch (err) {
       console.error("Error performing long rest:", err)
@@ -188,7 +208,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      const updatedPlayer = await api.removeItemFromPlayer(player.id, itemId)
+      const updatedPlayer = await removeItemFromPlayer(player.id, itemId)
       setPlayer(updatedPlayer)
 
       // Update the items list
@@ -203,7 +223,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      await api.equipItem(player.id, item.id, slot)
+      await equipItem(player.id, item.id, slot)
       await refreshPlayerData()
     } catch (err) {
       console.error("Error equipping item:", err)
@@ -214,7 +234,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      await api.unequipItem(player.id, slot)
+      await unequipItem(player.id, slot)
       await refreshPlayerData()
     } catch (err) {
       console.error("Error unequipping item:", err)
@@ -226,14 +246,14 @@ export default function PlayerPage() {
 
     try {
       // Get a random item from the lootbox
-      const possibleItems = await api.getLootboxItems(selectedLootbox)
+      const possibleItems = await getLootboxItems(selectedLootbox)
       const randomItem = possibleItems[Math.floor(Math.random() * possibleItems.length)]
 
       setLootboxResult(randomItem)
 
       // Remove lootbox from player and add item
-      await api.removeLootboxFromPlayer(player.id, selectedLootbox.id)
-      await api.addItemToPlayer(player.id, randomItem.id)
+      await removeLootboxFromPlayer(player.id, selectedLootbox.id)
+      await addItemToPlayer(player.id, randomItem.id)
 
       // Refresh player data
       await refreshPlayerData()
@@ -253,7 +273,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      const updatedPlayer = await api.updatePlayerAbilityScores(player.id, {
+      const updatedPlayer = await updatePlayerAbilityScores(player.id, {
         [ability]: value,
       })
       setPlayer(updatedPlayer)
@@ -266,7 +286,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      const updatedPlayer = await api.updatePlayerSavingThrows(player.id, {
+      const updatedPlayer = await updatePlayerSavingThrows(player.id, {
         [type]: value,
       })
       setPlayer(updatedPlayer)
@@ -279,7 +299,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      const updatedPlayer = await api.updatePlayerFollowers(player.id, followers, trending)
+      const updatedPlayer = await updatePlayerFollowers(player.id, followers, trending)
       setPlayer(updatedPlayer)
     } catch (err) {
       console.error("Error updating followers:", err)
@@ -290,7 +310,7 @@ export default function PlayerPage() {
     if (!player) return
 
     try {
-      const updatedPlayer = await api.updatePlayerGold(player.id, gold)
+      const updatedPlayer = await updatePlayerGold(player.id, gold)
       setPlayer(updatedPlayer)
     } catch (err) {
       console.error("Error updating gold:", err)

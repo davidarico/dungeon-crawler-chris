@@ -1,9 +1,10 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { upsertUser } from "@/lib/db/user";
+import { AuthOptions } from "next-auth";
 
-// Configure NextAuth
-const handler = NextAuth({
+// Define auth options to be used across the application
+export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -41,7 +42,10 @@ const handler = NextAuth({
       return session;
     },
   },
-});
+};
+
+// Create the NextAuth handler with our options
+const handler = NextAuth(authOptions);
 
 // Export handlers for API route
 export { handler as GET, handler as POST };

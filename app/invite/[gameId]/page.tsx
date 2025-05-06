@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { getGame, createPlayer, getPlayerByGameAndUser } from "@/lib/api"
+import { fetchGame, checkPlayerInGame, createPlayerForGame } from "@/lib/client-utils"
 import { Game } from "@/lib/types"
 import { Loader2 } from "lucide-react"
 import { useSession } from "next-auth/react"
@@ -15,21 +15,31 @@ import { toast } from "@/components/ui/use-toast"
 export default function InvitePage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const gameId = params.gameId as string
 
   const [game, setGame] = useState<Game | null>(null)
   const [playerName, setPlayerName] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [isPageLoading, setIsPageLoading] = useState(true)
+  const [debugInfo, setDebugInfo] = useState<any>({})
+
+  console.log("Invite page render - Session status:", sessionStatus, "User:", session?.user?.id ? "Logged in" : "Not logged in")
+  console.log("Game ID from params:", gameId)
 
   useEffect(() => {
+    console.log("Effect triggered - Session status:", sessionStatus, "User ID:", session?.user?.id)
+    
     async function fetchGameAndCheckPlayer() {
       try {
         setIsPageLoading(true)
-        const gameData = await getGame(gameId)
+        console.log("Fetching game data for ID:", gameId)
+        
+        const gameData = await fetchGame(gameId, true) // Pass true to indicate this is an invite page
+        console.log("Game data received:", gameData ? "Success" : "Not found")
         
         if (!gameData) {
+          console.log("Game not found, redirecting to home")
           toast({
             title: "Game not found",
             description: "The game you're trying to join doesn't exist.",
@@ -40,23 +50,35 @@ export default function InvitePage() {
         }
         
         setGame(gameData)
+        setDebugInfo(prev => ({ ...prev, game: gameData }))
         
         // Check if the user is already a player in this game
         if (session?.user?.id) {
-          const existingPlayer = await getPlayerByGameAndUser(gameId, session.user.id)
-          
-          if (existingPlayer) {
-            // User is already a player in this game, redirect to player page
-            toast({
-              title: "Already joined",
-              description: "You're already a player in this game.",
-            })
-            router.push(`/player/${gameId}`)
-            return
+          console.log("Checking if user is already in game")
+          try {
+            const playerCheck = await checkPlayerInGame(gameId)
+            console.log("Player check result:", playerCheck)
+            setDebugInfo(prev => ({ ...prev, playerCheck }))
+            
+            if (playerCheck?.exists) {
+              console.log("User already in game, redirecting to player page")
+              // User is already a player in this game, redirect to player page
+              toast({
+                title: "Already joined",
+                description: "You're already a player in this game.",
+              })
+              router.push(`/player/${gameId}`)
+              return
+            }
+          } catch (playerCheckError) {
+            console.error("Error checking player:", playerCheckError)
+            setDebugInfo(prev => ({ ...prev, playerCheckError: playerCheckError.message }))
+            // Don't redirect here, let the user see the form
           }
         }
       } catch (error) {
         console.error("Failed to fetch game:", error)
+        setDebugInfo(prev => ({ ...prev, fetchError: error.message }))
         toast({
           title: "Error",
           description: "Failed to load game information. Please try again.",
@@ -68,12 +90,17 @@ export default function InvitePage() {
       }
     }
 
-    if (session?.user?.id) {
-      fetchGameAndCheckPlayer()
-    } else {
-      setIsPageLoading(false)
+    // Only fetch if we have a session or know we're not authenticated
+    if (sessionStatus !== "loading") {
+      if (session?.user?.id) {
+        console.log("User is authenticated, fetching game data")
+        fetchGameAndCheckPlayer()
+      } else {
+        console.log("User is not authenticated, showing sign-in prompt")
+        setIsPageLoading(false)
+      }
     }
-  }, [gameId, router, session])
+  }, [gameId, router, session, sessionStatus])
 
   const handleJoinGame = async () => {
     if (!playerName.trim() || !session?.user?.id) return
@@ -81,14 +108,16 @@ export default function InvitePage() {
     setIsLoading(true)
 
     try {
+      console.log("Creating player for game:", gameId, "with name:", playerName.trim())
       // Create a new player in the database
-      await createPlayer(gameId, session.user.id, playerName.trim())
+      await createPlayerForGame(gameId, playerName.trim())
       
       toast({
         title: "Success!",
         description: "You've successfully joined the game.",
       })
       
+      console.log("Player created successfully, redirecting to player page")
       // Redirect to player page after successful join
       router.push(`/player/${gameId}`)
     } catch (error) {

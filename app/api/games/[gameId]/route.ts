@@ -1,5 +1,6 @@
 import { getGame, getGamePlayers } from '@/lib/api';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { NextRequest, NextResponse } from 'next/server';
 
 interface RouteParams {
@@ -12,11 +13,29 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { gameId } = params;
+    const { searchParams } = new URL(request.url);
+    const isInvite = searchParams.get('invite') === 'true';
     
     // Get user session
-    const session = await getServerSession();
+    const session = await getServerSession(authOptions);
     
-    // Return 401 if no session
+    // For invite links, we allow fetching basic game info without authentication
+    if (isInvite) {
+      // Get the specific game without user context
+      const game = await getGame(gameId);
+      
+      if (!game) {
+        return NextResponse.json({ error: 'Game not found' }, { status: 404 });
+      }
+      
+      // Return just the basic game info needed for the invite page
+      return NextResponse.json({
+        id: game.id,
+        name: game.name
+      });
+    }
+    
+    // For non-invite requests, require authentication
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -28,7 +47,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Game not found' }, { status: 404 });
     }
     
-    // Return the game
+    // Return the game with all details
     return NextResponse.json(game);
   } catch (error) {
     console.error(`API error fetching game ${params.gameId}:`, error);

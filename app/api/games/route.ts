@@ -1,12 +1,13 @@
 import { getGames, createGame } from '@/lib/api';
 import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET: Fetch all games for the current user
 export async function GET(request: NextRequest) {
   try {
-    // Get user session
-    const session = await getServerSession();
+    // Get user session with proper auth options
+    const session = await getServerSession(authOptions);
     
     // Return 401 if no session
     if (!session?.user?.id) {
@@ -30,8 +31,8 @@ export async function GET(request: NextRequest) {
 // POST: Create a new game
 export async function POST(request: NextRequest) {
   try {
-    // Get user session
-    const session = await getServerSession();
+    // Get user session with proper auth options
+    const session = await getServerSession(authOptions);
     
     // Return 401 if no session
     if (!session?.user?.id) {

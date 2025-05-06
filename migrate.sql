@@ -41,15 +41,16 @@ CREATE TABLE classes (
 
 -- Create items table
 CREATE TABLE items (
-  id TEXT PRIMARY KEY,
+  id SERIAL PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
   flavor_text TEXT,
-  equip_slot TEXT,            -- New field: Which slot the item can be equipped to (null for non-equippable)
+  equip_slot TEXT,            -- Which slot the item can be equipped to (null for non-equippable)
   categories TEXT[],          -- Array of text values
-  damage TEXT,                -- Storing damage as a dice string (e.g., '1d8')
-  range JSONB,                -- JSON structure for range values (nullable)
   cost INTEGER,               -- Cost in appropriate unit (nullable)
+  item_type TEXT NOT NULL,    -- Type of item: 'general', 'weapon', 'armor'
+  weapon_id INTEGER,          -- Foreign key to weapons table (null if not a weapon)
+  armor_id INTEGER,           -- Foreign key to armor table (null if not armor)
   special TEXT[]              -- Array of special attributes
 );
 
@@ -106,7 +107,7 @@ CREATE TABLE class_default_spells (
 -- Create join table for lootbox to possible items relationships
 CREATE TABLE lootbox_possible_items (
   lootbox_id TEXT REFERENCES lootboxes(id),
-  item_id TEXT REFERENCES items(id),
+  item_id INTEGER REFERENCES items(id),
   PRIMARY KEY (lootbox_id, item_id)
 );
 
@@ -120,7 +121,7 @@ CREATE TABLE player_spells (
 -- Create join table for players' items
 CREATE TABLE player_items (
   player_id TEXT REFERENCES players(id),
-  item_id TEXT REFERENCES items(id),
+  item_id INTEGER REFERENCES items(id),
   PRIMARY KEY (player_id, item_id)
 );
 
@@ -134,7 +135,7 @@ CREATE TABLE player_lootboxes (
 -- Create table for players' equipped items
 CREATE TABLE player_equipped_items (
   player_id TEXT REFERENCES players(id),
-  item_id TEXT REFERENCES items(id),
+  item_id INTEGER REFERENCES items(id),
   slot TEXT NOT NULL,         -- The slot where this item is equipped (weapon, shield, head, etc.)
   PRIMARY KEY (player_id, slot)
 );
@@ -145,7 +146,7 @@ CREATE TABLE weapons (
   name TEXT NOT NULL,
   damage TEXT NOT NULL,
   range JSONB,        -- {"short":…, "medium":…, "long":…}
-  cost INTEGER,
+  cost INTEGER,       -- Cost in appropriate unit (nullable)
   special TEXT[],     -- e.g. ['Two-handed','Reload']
   categories TEXT[]   -- melee, thrown, ranged, firearm, etc.
 );
@@ -170,24 +171,24 @@ INSERT INTO armor (name, ac_bonus, check_penalty, speed, fumble_die, cost, categ
   ('Halfling Leather',     2,   NULL,    NULL,   'd6',   200,   ARRAY['light']),
   ('Micromesh Clothing',   2,   '-1',    NULL,   'd6',   200,   ARRAY['light']),
   ('Composite Sport, Lg',  3,   '-1',    NULL,   'd8',   30,    ARRAY['light']),
-  ('Hide',                 3,   '-4',   '-10′', 'd12',  20,    ARRAY['medium']),
+  ('Hide',                 3,   '-4',   '-10', 'd12',  20,    ARRAY['medium']),
   ('Micromesh',            3,   '-3',    NULL,   'd8',   850,   ARRAY['medium']),
   ('Sexy Chainmail',       3,   '-2',    NULL,   'd8',   1000,  ARRAY['medium']),
   ('MiniLynx, Light',      4,   '-2',    NULL,   'd8',   750,   ARRAY['light']),
   ('Chainmail Shirt',      4,   '-2',    NULL,   'd10',  100,   ARRAY['medium']),
-  ('Composite Sport, Hv',  5,   '-4',   '-10′', 'd12',  300,   ARRAY['heavy']),
+  ('Composite Sport, Hv',  5,   '-4',   '-10', 'd12',  300,   ARRAY['heavy']),
   ('Chainmail',            5,   '-5',    NULL,   'd12',  250,   ARRAY['heavy']),
   ('Titanium Chainmail',   5,   '-4',    NULL,   'd10',  750,   ARRAY['heavy']),
-  ('Breastplate',          5,   '-1',   '-10′', 'd12',  400,   ARRAY['medium']),
-  ('Titanium Breastplate', 5,   '-3',   '-10′', 'd10',  1200,  ARRAY['medium']),
-  ('Sexy Half Plate',      5,   '-5',   '-10′', 'd12',  800,   ARRAY['medium']),
+  ('Breastplate',          5,   '-1',   '-10', 'd12',  400,   ARRAY['medium']),
+  ('Titanium Breastplate', 5,   '-3',   '-10', 'd10',  1200,  ARRAY['medium']),
+  ('Sexy Half Plate',      5,   '-5',   '-10', 'd12',  800,   ARRAY['medium']),
   ('Elfmake Chainmail',    5,   '-3',    NULL,   'd8',   0,     ARRAY['medium']),
-  ('Banded Mail',          6,   '-6',   '-5′',  'd12',  300,   ARRAY['heavy']),
-  ('MiniLynx',             6,   '-3',   '-5′',  'd10',  1300,  ARRAY['light']),
-  ('Half Plate',           7,   '-7',   '-10′', 'd14',  600,   ARRAY['heavy']),
-  ('Dwarvish Plate',       8,   '-5',   '-10′', 'd12',  5000,  ARRAY['heavy']),
-  ('Plate Mail',           8,   '-8',   '-10′', 'd16',  2225,  ARRAY['heavy']),
-  ('Titanium Plate Mail',  8,   '-6',   '-10′', 'd14',  7000,  ARRAY['heavy']),
+  ('Banded Mail',          6,   '-6',   '-5',  'd12',  300,   ARRAY['heavy']),
+  ('MiniLynx',             6,   '-3',   '-5',  'd10',  1300,  ARRAY['light']),
+  ('Half Plate',           7,   '-7',   '-10', 'd14',  600,   ARRAY['heavy']),
+  ('Dwarvish Plate',       8,   '-5',   '-10', 'd12',  5000,  ARRAY['heavy']),
+  ('Plate Mail',           8,   '-8',   '-10', 'd16',  2225,  ARRAY['heavy']),
+  ('Titanium Plate Mail',  8,   '-6',   '-10', 'd14',  7000,  ARRAY['heavy']),
   ('Shield',               1,   '-1',    NULL,   '-',    30,    ARRAY['shield']);
 
 INSERT INTO weapons (name, damage, range, cost, special, categories) VALUES
@@ -228,3 +229,50 @@ INSERT INTO weapons (name, damage, range, cost, special, categories) VALUES
   ('Pistol, .45',   '2d6',   '{"short":30,"medium":60,"long":90}',   175, ARRAY['10-shot clip','Min STR 11'], ARRAY['firearm','ranged']),
   ('Revolver, .38', '1d12',  '{"short":30,"medium":60,"long":90}',   125, ARRAY['6-in cylinder','Min STR 12'],ARRAY['firearm','ranged']),
   ('Shotgun',       '2d6',   '{"short":10,"medium":20,"long":30}',    100, ARRAY['6-integral','Min STR 13'], ARRAY['firearm','ranged']);
+
+-- Add items that reference weapons
+INSERT INTO items (name, description, flavor_text, equip_slot, categories, cost, item_type, weapon_id, special)
+SELECT 
+  w.name, 
+  'A ' || w.name || ' that deals ' || w.damage || ' damage.',
+  CASE 
+    WHEN 'ranged' = ANY(w.categories) THEN 'This weapon can be used from a distance.' 
+    ELSE 'A reliable weapon for close combat.'
+  END,
+  'weapon',
+  w.categories,
+  w.cost,
+  'weapon',
+  w.id,
+  w.special
+FROM weapons w;
+
+-- Add items that reference armor
+INSERT INTO items (name, description, flavor_text, equip_slot, categories, cost, item_type, armor_id, special)
+SELECT
+  a.name,
+  'Provides an AC bonus of +' || a.ac_bonus,
+  CASE
+    WHEN 'light' = ANY(a.categories) THEN 'Light and flexible, allowing for quick movement.'
+    WHEN 'medium' = ANY(a.categories) THEN 'Balanced protection without overly restricting movement.'
+    WHEN 'heavy' = ANY(a.categories) THEN 'Heavy protection at the cost of mobility.'
+    ELSE 'Offers some protection in combat.'
+  END,
+  CASE 
+    WHEN 'shield' = ANY(a.categories) THEN 'offhand'
+    ELSE 'body'
+  END,
+  a.categories,
+  a.cost,
+  'armor',
+  a.id,
+  ARRAY[a.fumble_die || ' fumble die']
+FROM armor a;
+
+-- Add general items (consumables, quest items, etc.)
+INSERT INTO items (name, description, flavor_text, equip_slot, categories, cost, item_type, special) VALUES
+  ('Health Potion', 'Restores 2d8+2 health when consumed.', 'A glowing red liquid that smells faintly of cinnamon.', NULL, ARRAY['consumable', 'potion'], 50, 'general', ARRAY['Instant use', 'Single use']),
+  ('Fireball Scroll', 'Casts Fireball spell when read.', 'The scroll is warm to the touch.', NULL, ARRAY['consumable', 'scroll', 'magic'], 300, 'general', ARRAY['Single use', '8d6 damage']),
+  ('Dungeon Master Key', 'Opens any standard lock in the dungeon.', 'A mysterious key that seems to change shape slightly depending on the lock.', NULL, ARRAY['key', 'quest'], 0, 'general', ARRAY['Cannot be sold']),
+  ('Ring of Protection', 'Grants +1 to all saving throws.', 'The ring glows faintly when danger is near.', 'finger', ARRAY['jewelry', 'magic'], 1000, 'general', ARRAY['Requires attunement']),
+  ('Amulet of Health', 'Increases maximum health by 10.', 'A red gemstone pulses like a heartbeat.', 'neck', ARRAY['jewelry', 'magic'], 750, 'general', ARRAY['Constant effect']);

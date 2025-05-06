@@ -42,6 +42,12 @@ export interface Player {
   followers: number
   trendingFollowers: number
   gold: number
+  // Adding optional relationship properties to fix TypeScript errors
+  items?: Item[] | string[]
+  spells?: Spell[] | string[]
+  lootboxes?: Lootbox[] | string[]
+  equippedItems?: Record<EquipSlot, Item>
+  class?: Class
 }
 
 export interface Class {
