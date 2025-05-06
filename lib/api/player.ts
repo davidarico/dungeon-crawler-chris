@@ -115,9 +115,27 @@ export async function updatePlayer(playerId: string, playerData: Partial<Player>
 /**
  * Get spells for a player
  */
-export async function getPlayerSpells(player: Player | PlayerWithRelations | null | undefined): Promise<Spell[]> {
-  // Return empty array if player is null or undefined
-  if (!player) return [];
+export async function getPlayerSpells(
+  playerOrId: Player | PlayerWithRelations | string | null | undefined
+): Promise<Spell[]> {
+  // Return empty array if playerOrId is null or undefined
+  if (!playerOrId) return [];
+  
+  // Handle case when a player ID string is passed directly
+  if (typeof playerOrId === 'string') {
+    const query = `
+      SELECT s.* 
+      FROM player_spells ps
+      JOIN spells s ON ps.spell_id = s.id
+      WHERE ps.player_id = $1
+    `;
+    
+    const result = await db.query(query, [playerOrId]);
+    return result.rows ? snakeToCamelCase(result.rows) : [];
+  }
+  
+  // Handle case when player object is passed
+  const player = playerOrId;
   
   // If the player already has spells property (it's a PlayerWithRelations)
   if ('spells' in player && Array.isArray(player.spells)) {
@@ -152,9 +170,27 @@ export async function getPlayerSpells(player: Player | PlayerWithRelations | nul
 /**
  * Get items for a player
  */
-export async function getPlayerItems(player: Player | PlayerWithRelations | null | undefined): Promise<Item[]> {
-  // Return empty array if player is null or undefined
-  if (!player) return [];
+export async function getPlayerItems(
+  playerOrId: Player | PlayerWithRelations | string | null | undefined
+): Promise<Item[]> {
+  // Return empty array if playerOrId is null or undefined
+  if (!playerOrId) return [];
+  
+  // Handle case when a player ID string is passed directly
+  if (typeof playerOrId === 'string') {
+    const query = `
+      SELECT i.* 
+      FROM player_items pi
+      JOIN items i ON pi.item_id = i.id
+      WHERE pi.player_id = $1
+    `;
+    
+    const result = await db.query(query, [playerOrId]);
+    return result.rows ? snakeToCamelCase(result.rows) : [];
+  }
+  
+  // Handle case when player object is passed
+  const player = playerOrId;
   
   // If the player already has items property (it's a PlayerWithRelations)
   if ('items' in player && Array.isArray(player.items)) {
@@ -195,9 +231,27 @@ export async function getPlayerItems(player: Player | PlayerWithRelations | null
 /**
  * Get lootboxes for a player
  */
-export async function getPlayerLootboxes(player: Player | PlayerWithRelations | null | undefined): Promise<Lootbox[]> {
-  // Return empty array if player is null or undefined
-  if (!player) return [];
+export async function getPlayerLootboxes(
+  playerOrId: Player | PlayerWithRelations | string | null | undefined
+): Promise<Lootbox[]> {
+  // Return empty array if playerOrId is null or undefined
+  if (!playerOrId) return [];
+  
+  // Handle case when a player ID string is passed directly
+  if (typeof playerOrId === 'string') {
+    const query = `
+      SELECT l.* 
+      FROM player_lootboxes pl
+      JOIN lootboxes l ON pl.lootbox_id = l.id
+      WHERE pl.player_id = $1
+    `;
+    
+    const result = await db.query(query, [playerOrId]);
+    return result.rows ? snakeToCamelCase(result.rows) : [];
+  }
+  
+  // Handle case when player object is passed
+  const player = playerOrId;
   
   // If the player already has lootboxes property (it's a PlayerWithRelations)
   if ('lootboxes' in player && Array.isArray(player.lootboxes)) {

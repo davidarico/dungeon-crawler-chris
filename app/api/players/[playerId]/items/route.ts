@@ -6,13 +6,11 @@ export async function GET(
   { params }: { params: { playerId: string } }
 ) {
   try {
-    const playerId = params.playerId;
+    // Properly handle params by ensuring it's resolved
+    const { playerId } = params;
     
-    // Get player first
-    const player = { id: playerId };
-    
-    // Get player items
-    const items = await getPlayerItems(player);
+    // Get player items using the playerId directly
+    const items = await getPlayerItems(playerId);
     
     // Return the items
     return NextResponse.json(items);

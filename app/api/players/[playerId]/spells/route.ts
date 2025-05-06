@@ -6,13 +6,11 @@ export async function GET(
   { params }: { params: { playerId: string } }
 ) {
   try {
-    const playerId = params.playerId;
+    // Properly handle params by ensuring it's resolved
+    const { playerId } = params;
     
-    // Get player first
-    const player = { id: playerId };
-    
-    // Get player spells
-    const spells = await getPlayerSpells(player);
+    // Call the API function with the playerId directly
+    const spells = await getPlayerSpells(playerId);
     
     // Return the spells
     return NextResponse.json(spells);

@@ -6,13 +6,11 @@ export async function GET(
   { params }: { params: { playerId: string } }
 ) {
   try {
-    const playerId = params.playerId;
+    // Properly handle params by ensuring it's resolved
+    const { playerId } = params;
     
-    // Get player first
-    const player = { id: playerId };
-    
-    // Get player lootboxes
-    const lootboxes = await getPlayerLootboxes(player);
+    // Get player lootboxes directly using the playerId
+    const lootboxes = await getPlayerLootboxes(playerId);
     
     // Return the lootboxes
     return NextResponse.json(lootboxes);
@@ -31,8 +29,9 @@ export async function DELETE(
 ) {
   try {
     const { searchParams } = new URL(request.url);
+    // Properly handle params by ensuring it's resolved
+    const { playerId } = params;
     const lootboxId = searchParams.get('lootboxId');
-    const playerId = params.playerId;
     
     if (!lootboxId) {
       return NextResponse.json(
