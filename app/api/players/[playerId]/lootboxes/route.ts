@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
-    // Properly handle params by ensuring it's resolved
-    const { playerId } = params;
+    // Access playerId directly from context.params
+    const playerId = (await context.params).playerId;
     
     // Get player lootboxes directly using the playerId
     const lootboxes = await getPlayerLootboxes(playerId);
@@ -25,12 +25,12 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
     const { searchParams } = new URL(request.url);
-    // Properly handle params by ensuring it's resolved
-    const { playerId } = params;
+    // Access playerId directly from context.params
+    const playerId = context.params.playerId;
     const lootboxId = searchParams.get('lootboxId');
     
     if (!lootboxId) {

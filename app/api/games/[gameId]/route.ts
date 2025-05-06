@@ -10,9 +10,13 @@ interface RouteParams {
 }
 
 // GET: Fetch a specific game by ID
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(
+  request: NextRequest,
+  context: { params: { gameId: string } }
+) {
   try {
-    const { gameId } = params;
+    // Access gameId directly from context.params
+    const gameId = (await context.params).gameId;
     const { searchParams } = new URL(request.url);
     const isInvite = searchParams.get('invite') === 'true';
     
@@ -50,7 +54,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Return the game with all details
     return NextResponse.json(game);
   } catch (error) {
-    console.error(`API error fetching game ${params.gameId}:`, error);
+    console.error(`API error fetching game:`, error);
     return NextResponse.json(
       { error: 'Failed to fetch game' },
       { status: 500 }
@@ -59,9 +63,13 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 // DELETE: Delete a game
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(
+  request: NextRequest,
+  context: { params: { gameId: string } }
+) {
   try {
-    const { gameId } = params;
+    // Access gameId directly from context.params
+    const gameId = context.params.gameId;
     
     // Get user session
     const session = await getServerSession();
@@ -72,10 +80,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     }
 
     // Implementation for deleting a game would go here
+    
     // For now, return a placeholder response
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error(`API error deleting game ${params.gameId}:`, error);
+    console.error(`API error deleting game:`, error);
     return NextResponse.json(
       { error: 'Failed to delete game' },
       { status: 500 }

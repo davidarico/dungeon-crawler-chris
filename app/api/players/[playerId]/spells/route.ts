@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
-    // Properly handle params by ensuring it's resolved
-    const { playerId } = params;
+    // Access playerId directly from context.params
+    const playerId = (await context.params).playerId;
     
     // Call the API function with the playerId directly
     const spells = await getPlayerSpells(playerId);

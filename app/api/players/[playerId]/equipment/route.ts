@@ -4,10 +4,11 @@ import { EquipSlot } from '@/lib/types';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
-    const playerId = params.playerId;
+    // Best practice is to access playerId without destructuring
+    const playerId = (await context.params).playerId;
     
     // Get equipped items
     const equippedItems = await getPlayerEquippedItems(playerId);
@@ -26,11 +27,11 @@ export async function GET(
 // Equip an item
 export async function POST(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
     const { itemId, slot } = await request.json();
-    const playerId = params.playerId;
+    const playerId = context.params.playerId;
     
     if (!itemId || !slot) {
       return NextResponse.json(
@@ -56,12 +57,12 @@ export async function POST(
 // Unequip an item
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
     const { searchParams } = new URL(request.url);
     const slotParam = searchParams.get('slot');
-    const playerId = params.playerId;
+    const playerId = context.params.playerId;
     
     if (!slotParam) {
       return NextResponse.json(

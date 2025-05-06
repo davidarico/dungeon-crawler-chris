@@ -3,11 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
-    // Properly handle params by ensuring it's resolved
-    const { playerId } = params;
+    // Access playerId directly from context.params
+    const playerId = (await context.params).playerId;
     
     // Get player items using the playerId directly
     const items = await getPlayerItems(playerId);
@@ -25,11 +25,11 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
     const { itemId } = await request.json();
-    const playerId = params.playerId;
+    const playerId = context.params.playerId;
     
     // Add item to player
     const updatedPlayer = await addItemToPlayer(playerId, itemId);
@@ -47,12 +47,12 @@ export async function POST(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { playerId: string } }
+  context: { params: { playerId: string } }
 ) {
   try {
     const { searchParams } = new URL(request.url);
     const itemId = searchParams.get('itemId');
-    const playerId = params.playerId;
+    const playerId = context.params.playerId;
     
     if (!itemId) {
       return NextResponse.json(

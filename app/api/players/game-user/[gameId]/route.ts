@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { gameId: string } }
+  context: { params: { gameId: string } }
 ) {
   try {
     // Get user from session
@@ -17,7 +17,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const gameId = params.gameId;
+    // Access gameId directly from context.params
+    const gameId = (await context.params).gameId;
     
     // Get player data
     const player = await getPlayerByGameAndUser(gameId, userId);
