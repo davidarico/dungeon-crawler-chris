@@ -6,7 +6,7 @@ Created and maintained by Chris and David
 
 ### High Priority
 - [X] Add Google Login
-- [X] Transition from Mock Data to Supabase (In Progress)
+- [X] Transition from Mock Data to Supabase
 - [X] Add Item chat to create new items for the game
 - [ ] Create Item Embedding System to Try and Feed Similar Items into Item Generation System
 - [X] Migrate Database off of Supabase
