@@ -31,6 +31,7 @@ Created and maintained by Chris and David
 - [ ] Implement a Migration Framework to Handle Database Changes
 - [ ] Create Item Icons
 - [ ] Add Realtime Chat Allowing Users to see Other Lootboxes being Opened
+- [ ] Change the Equipment Screen to Show all Equiped Items
 
 ### Low Priority
 - [ ] Rework Item List to Allow for Multiple Filters
