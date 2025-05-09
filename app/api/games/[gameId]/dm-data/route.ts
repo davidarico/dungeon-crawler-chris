@@ -9,7 +9,7 @@ export async function GET(
   { params }: { params: { gameId: string } }
 ) {
   try {
-    const gameId = params.gameId;
+    const gameId = (await params).gameId;
     
     // Get user session
     const session = await getServerSession(authOptions);

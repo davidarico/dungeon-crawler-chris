@@ -187,14 +187,14 @@ export async function updatePlayerFollowers(playerId: string, followers: number,
   return response.json();
 }
 
-export async function updatePlayerGold(playerId: string, gold: number) {
+export async function updatePlayerGold(playerId: string, crawlerCredit: number) {
   const response = await fetch(`/api/players/${playerId}/gold`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ gold })
+    body: JSON.stringify({ gold: crawlerCredit })
   });
   if (!response.ok) {
-    throw new Error(`Failed to update gold for player ${playerId}`);
+    throw new Error(`Failed to update crawler credit for player ${playerId}`);
   }
   return response.json();
 }

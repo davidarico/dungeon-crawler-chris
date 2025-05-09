@@ -47,7 +47,7 @@ import {
 import { AbilityScoreCard } from "@/components/ability-score-card"
 import { SavingThrowsCard } from "@/components/saving-throws-card"
 import { FollowersCard } from "@/components/followers-card"
-import { GoldCard } from "@/components/gold-card"
+import { CreditCard } from "@/components/credit-card"
 import { Game, PlayerWithRelations, Class, Spell, Item, Lootbox } from "@/lib/types"
 import { useSession } from "next-auth/react"
 
@@ -78,7 +78,7 @@ export default function DMPage() {
   const [isKickDialogOpen, setIsKickDialogOpen] = useState(false)
   const [isAbilityScoresDialogOpen, setIsAbilityScoresDialogOpen] = useState(false)
   const [isFollowersDialogOpen, setIsFollowersDialogOpen] = useState(false)
-  const [isGoldDialogOpen, setIsGoldDialogOpen] = useState(false)
+  const [isCreditDialogOpen, setIsCreditDialogOpen] = useState(false)
   const [newPlayerName, setNewPlayerName] = useState("")
   const [newPlayerLevel, setNewPlayerLevel] = useState(1)
   const [searchTerm, setSearchTerm] = useState("")
@@ -362,7 +362,7 @@ export default function DMPage() {
     setIsFollowersDialogOpen(false)
   }
 
-  const handleGoldChange = (gold: number) => {
+  const handleCreditChange = (gold: number) => {
     if (!selectedPlayer) return
 
     setPlayers(
@@ -376,7 +376,7 @@ export default function DMPage() {
       ),
     )
 
-    setIsGoldDialogOpen(false)
+    setIsCreditDialogOpen(false)
   }
 
   const filteredItems = items.filter(
@@ -485,7 +485,7 @@ export default function DMPage() {
                           <DropdownMenuItem
                             onClick={() => {
                               setSelectedPlayer(player)
-                              setIsGoldDialogOpen(true)
+                              setIsCreditDialogOpen(true)
                             }}
                           >
                             <Coins className="mr-2 h-4 w-4" />
@@ -540,17 +540,17 @@ export default function DMPage() {
                   </div>
 
                   <div className="flex flex-col">
-                    <span className="text-sm text-muted-foreground">Gold</span>
+                    <span className="text-sm text-muted-foreground">CrawlerCredit</span>
                     <div className="flex items-center">
                       <Coins className="h-4 w-4 text-yellow-500 mr-1" />
-                      <span>{player.gold} GP</span>
+                      <span>{player.crawlerCredit} CC</span>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="ml-2 h-6 w-6 p-0"
                         onClick={() => {
                           setSelectedPlayer(player)
-                          setIsGoldDialogOpen(true)
+                          setIsCreditDialogOpen(true)
                         }}
                       >
                         <Edit className="h-3 w-3" />
@@ -1156,14 +1156,14 @@ export default function DMPage() {
       </Dialog>
 
       {/* Edit Gold Dialog */}
-      <Dialog open={isGoldDialogOpen} onOpenChange={setIsGoldDialogOpen}>
+      <Dialog open={isCreditDialogOpen} onOpenChange={setIsCreditDialogOpen}>
         <DialogContent className="sm:max-w-[600px] bg-card">
           <DialogHeader>
-            <DialogTitle>Edit Gold for {selectedPlayer?.name}</DialogTitle>
-            <DialogDescription>Adjust player's gold amount</DialogDescription>
+            <DialogTitle>Edit Crawler Credit for {selectedPlayer?.name}</DialogTitle>
+            <DialogDescription>Adjust player's crawler credit amount</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {selectedPlayer && <GoldCard gold={selectedPlayer.gold} editable={true} onGoldChange={handleGoldChange} />}
+            {selectedPlayer && <CreditCard crawlerCredit={selectedPlayer.crawlerCredit || 0} editable={true} onCrawlerCreditChange={handleCreditChange} />}
           </div>
         </DialogContent>
       </Dialog>

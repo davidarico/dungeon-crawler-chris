@@ -410,15 +410,15 @@ export async function updatePlayerHealth(playerId: string, health: number): Prom
 }
 
 /**
- * Update player gold
+ * Update player crawler credit
  */
 export async function updatePlayerGold(playerId: string, gold: number): Promise<Player> {
   try {
-    const newGold = Math.max(gold, 0);
+    const newCredit = Math.max(gold, 0);
 
     const result = await db.query(
-      'UPDATE players SET gold = $1 WHERE id = $2 RETURNING *',
-      [newGold, playerId]
+      'UPDATE players SET crawler_credit = $1 WHERE id = $2 RETURNING *',
+      [newCredit, playerId]
     );
 
     if (!result.rows || result.rows.length === 0) {
@@ -427,7 +427,7 @@ export async function updatePlayerGold(playerId: string, gold: number): Promise<
 
     return snakeToCamelCase(result.rows[0]);
   } catch (error) {
-    console.error('Error updating player gold:', error);
+    console.error('Error updating player crawler credit:', error);
     throw error;
   }
 }
@@ -578,7 +578,7 @@ export async function createPlayer(gameId: string, userId: string, name: string)
     const query = `
       INSERT INTO players (
         id, game_id, user_id, name, level, health, max_health, class_id, 
-        followers, trending_followers, gold, strength, agility, stamina, 
+        followers, trending_followers, crawler_credit, strength, agility, stamina, 
         personality, intelligence, luck, saving_throw_fortitude, saving_throw_reflex,
         saving_throw_willpower
       ) 

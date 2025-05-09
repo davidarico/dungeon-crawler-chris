@@ -384,7 +384,7 @@ export default function GenerateItemsPage() {
                   )}
                   {item.value && (
                     <div className="flex items-center text-sm text-muted-foreground">
-                      <strong className="mr-2">Value:</strong> {item.value} gold
+                      <strong className="mr-2">Value:</strong> {item.value} CC
                     </div>
                   )}
                 </CardContent>

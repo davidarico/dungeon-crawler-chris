@@ -45,7 +45,6 @@ OPENAI_API_KEY=open-ai-key
 	8. Neck
 	9. Rings (Maybe WoW rules of having 2)
 	Then every other item is just in the regular item pool (your toasters, torches, food, potions, etc) 
-- [ ] WIP: Add Visual Indication for Armor Slots (WoW Character Pane Inspiration) (No Icons Implemented ATM)
 - [ ] Stream Database Changes via WebSocket so the DM sees Player Sheet Changes and Vice Versa
 - [ ] Add Classes to Database
 
@@ -53,10 +52,14 @@ OPENAI_API_KEY=open-ai-key
 - [ ] Change Gold to Crawler Credit
 - [ ] Add Fishing Minigame
 - [ ] Implement a Migration Framework to Handle Database Changes
-- [ ] Create Item Icons
 - [ ] Add Realtime Chat Allowing Users to see Other Lootboxes being Opened
 - [ ] Refactor Item List to Better Display Item Details like AC and Damange Rolls
 - [ ] Implement Automatic AC Calculation
+- [ ] Add Occupation (View Handbook)
+- [ ] Add Notes Section to Player Screen
 
 ### Low Priority
 - [ ] Rework Item List Page to Allow for Multiple Filters
+- [ ] Create Item Icons
+- [ ] WIP: Add Visual Indication for Armor Slots (WoW Character Pane Inspiration) (No Icons Implemented ATM)
+- [ ] Create Post Fight Loot Screen. A way for the DM to Assign Loot to Players Fast

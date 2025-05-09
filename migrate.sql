@@ -94,7 +94,7 @@ CREATE TABLE players (
   
   followers INTEGER,
   trending_followers INTEGER,
-  gold INTEGER
+  crawler_credit INTEGER
 );
 
 -- Create join table for classes' default spells

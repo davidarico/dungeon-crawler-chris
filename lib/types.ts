@@ -41,7 +41,7 @@ export interface Player {
   savingThrows: SavingThrows
   followers: number
   trendingFollowers: number
-  gold: number
+  crawlerCredit: number
   // Adding optional relationship properties to fix TypeScript errors
   items?: Item[] | string[]
   spells?: Spell[] | string[]
