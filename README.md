@@ -21,7 +21,7 @@ Created and maintained by Chris and David
 	8. Neck
 	9. Rings (Maybe WoW rules of having 2)
 	Then every other item is just in the regular item pool (your toasters, torches, food, potions, etc) 
-- [ ] WIP: Add Visual Indication for Armor Slots (WoW Character Pane Inspiration)
+- [ ] WIP: Add Visual Indication for Armor Slots (WoW Character Pane Inspiration) (No Icons Implemented ATM)
 - [ ] Stream Database Changes via WebSocket so the DM sees Player Sheet Changes and Vice Versa
 - [ ] Add Classes to Database
 
@@ -31,6 +31,8 @@ Created and maintained by Chris and David
 - [ ] Implement a Migration Framework to Handle Database Changes
 - [ ] Create Item Icons
 - [ ] Add Realtime Chat Allowing Users to see Other Lootboxes being Opened
+- [ ] Refactor Item List to Better Display Item Details like AC and Damange Rolls
+- [ ] Implement Automatic AC Calculation
 
 ### Low Priority
-- [ ] Rework Item List to Allow for Multiple Filters
+- [ ] Rework Item List Page to Allow for Multiple Filters

@@ -293,6 +293,35 @@ export async function fetchItem(itemId: string) {
   return response.json() as Promise<Item>;
 }
 
+// Add these new functions for item generation
+export async function generateItems(prompt: string, category: string, equipmentSlot?: string) {
+  const response = await fetch('/api/generate-items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, category, equipmentSlot }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to generate items');
+  }
+  
+  return response.json();
+}
+
+export async function createItems(items: Omit<Item, 'id'>[]) {
+  const response = await fetch('/api/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to create items');
+  }
+  
+  return response.json();
+}
+
 // LOOTBOXES
 export async function fetchLootboxes() {
   const response = await fetch('/api/lootboxes');

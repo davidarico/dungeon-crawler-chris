@@ -19,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ArrowLeft, Wand2, Loader2 } from "lucide-react"
-import { getItems, createItems } from "@/lib/api"
+import { fetchItems, generateItems, createItems } from "@/lib/client-utils" // Changed from @/lib/api to client-utils
 import { Item, EquipSlot } from "@/lib/types"
 import { toast } from "@/components/ui/use-toast"
 
@@ -62,9 +62,9 @@ export default function GenerateItemsPage() {
   
   // Fetch existing items for context
   useEffect(() => {
-    async function fetchItems() {
+    async function fetchItemsData() {
       try {
-        const items = await getItems()
+        const items = await fetchItems()
         setExistingItems(items)
       } catch (error) {
         console.error("Error fetching items:", error)
@@ -73,7 +73,7 @@ export default function GenerateItemsPage() {
       }
     }
     
-    fetchItems()
+    fetchItemsData()
   }, [])
   
   // Create the prompt for ChatGPT based on user selections
@@ -155,20 +155,7 @@ export default function GenerateItemsPage() {
       const prompt = generatePrompt()
       
       // Make a request to the ChatGPT API to generate items
-      // In a real app, this would be a call to the OpenAI API, but we'll mock it for demonstration
-      const response = await fetch("/api/generate-items", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ prompt, category: itemCategory, equipmentSlot }),
-      })
-      
-      if (!response.ok) {
-        throw new Error("Failed to generate items")
-      }
-      
-      const data = await response.json()
+      const data = await generateItems(prompt, itemCategory, equipmentSlot)
       
       // Format and set the generated items
       setGeneratedItems(
