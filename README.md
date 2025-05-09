@@ -2,6 +2,30 @@
 A TTRPG inspired by Dungeon Crawler Carl.
 Created and maintained by Chris and David
 
+## Running the Project
+1. Run `npm install --legacy-peer-deps`. This is because there is deprecated packages we are using as a part of shadcn. We possibly want to solve this but minor inconvience.
+2. Ensure you have am .env.local files with the following params:
+```
+PG_HOST=host
+PG_PORT=5432
+PG_DATABASE=mydb
+PG_USER=myuser
+PG_PASSWORD=mypwd
+
+# Authentication
+NEXTAUTH_URL=url
+NEXTAUTH_SECRET=secret
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-secret
+
+# OpenAI API
+OPENAI_API_KEY=open-ai-key
+```
+3. Ensure you have ran the migrate.sql file (full migration process coming soon)
+4. `npm run dev`
+
 ## TODO
 
 ### High Priority
