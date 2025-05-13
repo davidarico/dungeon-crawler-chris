@@ -1,9 +1,9 @@
-import { getGame, getGamePlayers, getClasses, getItems, getSpells } from '@/lib/api';
+import { getGame, getGamePlayers, getItems, getLootboxes } from '@/lib/api';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { NextRequest, NextResponse } from 'next/server';
 
-// GET: Fetch all data needed for the DM page
+// GET: Fetch all data needed for the lootbox page
 export async function GET(
   request: NextRequest,
   { params }: { params: { gameId: string } }
@@ -19,7 +19,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get all the data needed for the DM page
+    // Get all the data needed for the lootbox page
     const game = await getGame(gameId, session.user.id);
     
     // If game doesn't exist or user is not the DM, return 404/403
@@ -33,22 +33,20 @@ export async function GET(
 
     // Get all required data
     const players = await getGamePlayers(gameId);
-    const classes = await getClasses();
     const items = await getItems();
-    const spells = await getSpells();
+    const lootboxes = await getLootboxes();
     
     // Return all data in one response
     return NextResponse.json({
       game,
       players,
-      classes,
       items,
-      spells
+      lootboxes
     });
   } catch (error) {
-    console.error('API error fetching DM data:', error);
+    console.error('API error fetching lootbox data:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch DM data' },
+      { error: 'Failed to fetch lootbox data' },
       { status: 500 }
     );
   }

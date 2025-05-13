@@ -23,8 +23,8 @@ import { AbilityScoreCard } from "@/components/ability-score-card"
 import { SavingThrowsCard } from "@/components/saving-throws-card"
 import { WeaponDetails } from "@/components/weapon-details"
 import { FollowersCard } from "@/components/followers-card"
-import { GoldCard } from "@/components/gold-card"
 import { EquipmentSlots } from "@/components/equipment-slots"
+import { CreditCard } from "@/components/credit-card"
 import { 
   fetchGame,
   fetchPlayerByGameAndUser,
@@ -472,8 +472,8 @@ export default function PlayerPage() {
           onFollowersChange={handleFollowersChange}
         />
 
-        {/* Gold Section */}
-        <GoldCard gold={player.gold} onGoldChange={handleGoldChange} />
+        {/* Credit Section */}
+        <CreditCard crawlerCredit={player.crawlerCredit} onCrawlerCreditChange={handleGoldChange} />
       </div>
 
       {/* Ability Scores Section */}
@@ -548,7 +548,6 @@ export default function PlayerPage() {
                 <span>Lootboxes</span>
               </TabsTrigger>
             </TabsList>
-
             <div className="relative w-full max-w-xs">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input

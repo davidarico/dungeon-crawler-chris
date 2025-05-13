@@ -187,14 +187,14 @@ export async function updatePlayerFollowers(playerId: string, followers: number,
   return response.json();
 }
 
-export async function updatePlayerGold(playerId: string, gold: number) {
+export async function updatePlayerGold(playerId: string, crawlerCredit: number) {
   const response = await fetch(`/api/players/${playerId}/gold`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ gold })
+    body: JSON.stringify({ gold: crawlerCredit })
   });
   if (!response.ok) {
-    throw new Error(`Failed to update gold for player ${playerId}`);
+    throw new Error(`Failed to update crawler credit for player ${playerId}`);
   }
   return response.json();
 }
@@ -291,6 +291,35 @@ export async function fetchItem(itemId: string) {
     throw new Error(`Failed to fetch item with ID ${itemId}`);
   }
   return response.json() as Promise<Item>;
+}
+
+// Add these new functions for item generation
+export async function generateItems(prompt: string, category: string, equipmentSlot?: string) {
+  const response = await fetch('/api/generate-items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ prompt, category, equipmentSlot }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to generate items');
+  }
+  
+  return response.json();
+}
+
+export async function createItems(items: Omit<Item, 'id'>[]) {
+  const response = await fetch('/api/items', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ items }),
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to create items');
+  }
+  
+  return response.json();
 }
 
 // LOOTBOXES

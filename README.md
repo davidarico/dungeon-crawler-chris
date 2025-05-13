@@ -2,6 +2,30 @@
 A TTRPG inspired by Dungeon Crawler Carl.
 Created and maintained by Chris and David
 
+## Running the Project
+1. Run `npm install --legacy-peer-deps`. This is because there is deprecated packages we are using as a part of shadcn. We possibly want to solve this but minor inconvience.
+2. Ensure you have am .env.local files with the following params:
+```
+PG_HOST=host
+PG_PORT=5432
+PG_DATABASE=mydb
+PG_USER=myuser
+PG_PASSWORD=mypwd
+
+# Authentication
+NEXTAUTH_URL=url
+NEXTAUTH_SECRET=secret
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-secret
+
+# OpenAI API
+OPENAI_API_KEY=open-ai-key
+```
+3. Ensure you have ran the migrate.sql file (full migration process coming soon)
+4. `npm run dev`
+
 ## TODO
 
 ### High Priority
@@ -21,7 +45,6 @@ Created and maintained by Chris and David
 	8. Neck
 	9. Rings (Maybe WoW rules of having 2)
 	Then every other item is just in the regular item pool (your toasters, torches, food, potions, etc) 
-- [ ] WIP: Add Visual Indication for Armor Slots (WoW Character Pane Inspiration)
 - [ ] Stream Database Changes via WebSocket so the DM sees Player Sheet Changes and Vice Versa
 - [ ] Add Classes to Database
 
@@ -29,9 +52,15 @@ Created and maintained by Chris and David
 - [ ] Change Gold to Crawler Credit
 - [ ] Add Fishing Minigame
 - [ ] Implement a Migration Framework to Handle Database Changes
-- [ ] Create Item Icons
 - [ ] Add Realtime Chat Allowing Users to see Other Lootboxes being Opened
 - [ ] Change the Equipment Screen to Show all Equiped Items
+- [ ] Refactor Item List to Better Display Item Details like AC and Damange Rolls
+- [ ] Implement Automatic AC Calculation
+- [ ] Add Occupation (View Handbook)
+- [ ] Add Notes Section to Player Screen
 
 ### Low Priority
-- [ ] Rework Item List to Allow for Multiple Filters
+- [ ] Rework Item List Page to Allow for Multiple Filters
+- [ ] Create Item Icons
+- [ ] WIP: Add Visual Indication for Armor Slots (WoW Character Pane Inspiration) (No Icons Implemented ATM)
+- [ ] Create Post Fight Loot Screen. A way for the DM to Assign Loot to Players Fast

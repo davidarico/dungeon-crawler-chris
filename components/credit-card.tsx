@@ -6,29 +6,29 @@ import { Input } from "@/components/ui/input"
 import { Coins } from "lucide-react"
 import { useState } from "react"
 
-interface GoldCardProps {
-  gold: number
+interface CreditCardProps {
+  crawlerCredit: number
   editable?: boolean
-  onGoldChange?: (gold: number) => void
+  onCrawlerCreditChange?: (crawlerCredit: number) => void
 }
 
-export function GoldCard({ gold, editable = false, onGoldChange }: GoldCardProps) {
-  const [goldInput, setGoldInput] = useState(gold.toString())
-  const [goldChange, setGoldChange] = useState(0)
+export function CreditCard({ crawlerCredit, editable = false, onCrawlerCreditChange }: CreditCardProps) {
+  const [creditInput, setCreditInput] = useState(crawlerCredit.toString())
+  const [creditChange, setCreditChange] = useState(0)
 
   const handleSave = () => {
-    const newGold = Number.parseInt(goldInput) || 0
-    if (onGoldChange) {
-      onGoldChange(newGold)
+    const newCredit = Number.parseInt(creditInput) || 0
+    if (onCrawlerCreditChange) {
+      onCrawlerCreditChange(newCredit)
     }
   }
 
-  const handleGoldChange = (amount: number) => {
-    const newGold = Math.max(0, gold + amount)
-    if (onGoldChange) {
-      onGoldChange(newGold)
+  const handleCreditChange = (amount: number) => {
+    const newCredit = Math.max(0, crawlerCredit + amount)
+    if (onCrawlerCreditChange) {
+      onCrawlerCreditChange(newCredit)
     }
-    setGoldChange(0)
+    setCreditChange(0)
   }
 
   return (
@@ -36,7 +36,7 @@ export function GoldCard({ gold, editable = false, onGoldChange }: GoldCardProps
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
           <Coins className="h-5 w-5 text-yellow-500" />
-          Gold
+          Crawler Credit
         </CardTitle>
         <CardDescription>Currency for purchases and bribes</CardDescription>
       </CardHeader>
@@ -46,8 +46,8 @@ export function GoldCard({ gold, editable = false, onGoldChange }: GoldCardProps
             <div className="flex gap-2">
               <Input
                 type="number"
-                value={goldInput}
-                onChange={(e) => setGoldInput(e.target.value)}
+                value={creditInput}
+                onChange={(e) => setCreditInput(e.target.value)}
                 className="text-center"
               />
               <Button onClick={handleSave}>Save</Button>
@@ -55,22 +55,22 @@ export function GoldCard({ gold, editable = false, onGoldChange }: GoldCardProps
           </div>
         ) : (
           <div className="space-y-2">
-            <div className="text-2xl font-bold text-yellow-500">{gold} GP</div>
+            <div className="text-2xl font-bold text-yellow-500">{crawlerCredit} CC</div>
             <div className="flex gap-2">
               <Input
                 type="number"
-                value={goldChange}
+                value={creditChange}
                 onChange={(e) => {
                   const value = e.target.value === "" ? 0 : Number.parseInt(e.target.value)
-                  setGoldChange(isNaN(value) ? 0 : value)
+                  setCreditChange(isNaN(value) ? 0 : value)
                 }}
                 className="text-center"
                 placeholder="Amount"
               />
-              <Button variant="outline" onClick={() => handleGoldChange(goldChange)}>
+              <Button variant="outline" onClick={() => handleCreditChange(creditChange)}>
                 Add
               </Button>
-              <Button variant="outline" onClick={() => handleGoldChange(-goldChange)}>
+              <Button variant="outline" onClick={() => handleCreditChange(-creditChange)}>
                 Spend
               </Button>
             </div>
