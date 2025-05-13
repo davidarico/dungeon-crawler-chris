@@ -12,7 +12,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Package, Search, Loader2 } from "lucide-react"
-import { getGame, getGamePlayers, getItems, getLootboxes } from "@/lib/api"
 import { Game, Player, Item, Lootbox } from "@/lib/types"
 
 const LOOTBOX_TIERS = ["Bronze", "Silver", "Gold", "Platinum", "Legendary", "Celestial"]
@@ -44,23 +43,24 @@ export default function LootboxPage() {
       try {
         setLoading(true)
         
-        // Fetch game, players, items, and lootboxes from Supabase
-        const gameData = await getGame(gameId)
-        if (!gameData) {
-          router.push("/")
+        // Fetch game, players, items, and lootboxes from our API route
+        const response = await fetch(`/api/games/${gameId}/lootbox`)
+        
+        if (!response.ok) {
+          if (response.status === 401 || response.status === 403) {
+            router.push("/login")
+          } else {
+            router.push("/")
+          }
           return
         }
-
-        const [playersData, itemsData, lootboxesData] = await Promise.all([
-          getGamePlayers(gameId),
-          getItems(),
-          getLootboxes()
-        ])
-
-        setGame(gameData)
-        setPlayers(playersData)
-        setItems(itemsData)
-        setLootboxes(lootboxesData)
+        
+        const data = await response.json()
+        
+        setGame(data.game)
+        setPlayers(data.players)
+        setItems(data.items)
+        setLootboxes(data.lootboxes)
       } catch (error) {
         console.error("Failed to fetch data:", error)
       } finally {
@@ -89,12 +89,22 @@ export default function LootboxPage() {
       name: lootboxName,
       tier: selectedTier,
       possibleItems: selectedItems,
-    }
-
-    // Add lootbox to player
-    const updatedPlayers = players.map((player) =>
-      player.id === selectedPlayerId ? { ...player, lootboxes: [...player.lootboxes, newLootbox.id] } : player,
-    )
+    }    // Add lootbox to player
+    const updatedPlayers = players.map((player) => {
+      if (player.id === selectedPlayerId) {
+        // Create a new player object with the updated lootboxes array
+        // Ensure we're working with string[] for lootbox IDs
+        const currentLootboxes = Array.isArray(player.lootboxes) 
+          ? player.lootboxes.map(box => typeof box === 'string' ? box : box.id)
+          : [];
+        
+        return { 
+          ...player, 
+          lootboxes: [...currentLootboxes, newLootbox.id] as string[]
+        };
+      }
+      return player;
+    })
 
     setPlayers(updatedPlayers)
 

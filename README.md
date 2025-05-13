@@ -58,6 +58,7 @@ OPENAI_API_KEY=open-ai-key
 - [ ] Implement Automatic AC Calculation
 - [ ] Add Occupation (View Handbook)
 - [ ] Add Notes Section to Player Screen
+- [ ] Rework Lootbox Creation Screen to Handle Larger Lootboxes
 
 ### Low Priority
 - [ ] Rework Item List Page to Allow for Multiple Filters
