@@ -61,33 +61,3 @@ export async function GET(
     );
   }
 }
-
-// DELETE: Delete a game
-export async function DELETE(
-  request: NextRequest,
-  context: { params: { gameId: string } }
-) {
-  try {
-    // Access gameId directly from context.params
-    const gameId = context.params.gameId;
-    
-    // Get user session
-    const session = await getServerSession();
-    
-    // Return 401 if no session
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Implementation for deleting a game would go here
-    
-    // For now, return a placeholder response
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error(`API error deleting game:`, error);
-    return NextResponse.json(
-      { error: 'Failed to delete game' },
-      { status: 500 }
-    );
-  }
-}

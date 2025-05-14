@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { itemId: string } }
 ) {
   try {
-    const itemId = params.itemId;
+    const itemId = (await params).itemId;
     
     if (!itemId) {
       return NextResponse.json({ error: 'Item ID is required' }, { status: 400 });

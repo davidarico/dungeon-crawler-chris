@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { spellId: string } }
 ) {
   try {
-    const spellId = params.spellId;
+    const spellId = (await params).spellId;
     
     if (!spellId) {
       return NextResponse.json({ error: 'Spell ID is required' }, { status: 400 });

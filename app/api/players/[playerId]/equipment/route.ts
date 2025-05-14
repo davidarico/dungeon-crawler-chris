@@ -31,7 +31,7 @@ export async function POST(
 ) {
   try {
     const { itemId, slot } = await request.json();
-    const playerId = context.params.playerId;
+    const playerId = (await context.params).playerId;
     
     if (!itemId || !slot) {
       return NextResponse.json(
@@ -62,7 +62,7 @@ export async function DELETE(
   try {
     const { searchParams } = new URL(request.url);
     const slotParam = searchParams.get('slot');
-    const playerId = context.params.playerId;
+    const playerId = (await context.params).playerId;
     
     if (!slotParam) {
       return NextResponse.json(

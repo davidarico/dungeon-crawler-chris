@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { lootboxId: string } }
 ) {
   try {
-    const lootboxId = params.lootboxId;
+    const lootboxId = (await params).lootboxId;
     
     if (!lootboxId) {
       return NextResponse.json({ error: 'Lootbox ID is required' }, { status: 400 });

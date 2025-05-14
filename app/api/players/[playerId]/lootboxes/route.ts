@@ -30,7 +30,7 @@ export async function DELETE(
   try {
     const { searchParams } = new URL(request.url);
     // Access playerId directly from context.params
-    const playerId = context.params.playerId;
+    const playerId = (await context.params).playerId;
     const lootboxId = searchParams.get('lootboxId');
     
     if (!lootboxId) {

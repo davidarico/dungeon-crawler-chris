@@ -33,6 +33,7 @@ OPENAI_API_KEY=open-ai-key
 - [X] Transition from Mock Data to Supabase
 - [X] Add Item chat to create new items for the game
 - [ ] Create Item Embedding System to Try and Feed Similar Items into Item Generation System
+- [ ] Leverage Item Embedding for Lootbox Generation
 - [X] Migrate Database off of Supabase
 - [ ] WIP: Rework Inventory to have Separate Sections for:
     1. Weapons
@@ -49,13 +50,14 @@ OPENAI_API_KEY=open-ai-key
 - [ ] Add Classes to Database
 
 ### Medium Priority
-- [ ] Change Gold to Crawler Credit
+- [X] Change Gold to Crawler Credit
 - [ ] Add Fishing Minigame
 - [ ] Implement a Migration Framework to Handle Database Changes
 - [ ] Add Realtime Chat Allowing Users to see Other Lootboxes being Opened
 - [ ] Change the Equipment Screen to Show all Equiped Items
 - [ ] Refactor Item List to Better Display Item Details like AC and Damange Rolls
 - [ ] Implement Automatic AC Calculation
+- [ ] Implement Automatic Attack Rolls and Damage Roll Calculations
 - [ ] Add Occupation (View Handbook)
 - [ ] Add Notes Section to Player Screen
 - [ ] Rework Lootbox Creation Screen to Handle Larger Lootboxes

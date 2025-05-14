@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { lootboxId: string } }
 ) {
   try {
-    const lootboxId = params.lootboxId;
+    const lootboxId = (await params).lootboxId;
     
     // Create a complete lootbox object with all required properties
     const lootbox: Lootbox = { 

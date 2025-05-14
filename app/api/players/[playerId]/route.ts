@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { playerId: string } }
 ) {
   try {
-    const playerId = params.playerId;
+    const playerId = (await params).playerId;
     
     if (!playerId) {
       return NextResponse.json({ error: 'Player ID is required' }, { status: 400 });

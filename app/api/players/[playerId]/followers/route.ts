@@ -6,7 +6,7 @@ export async function PUT(
   { params }: { params: { playerId: string } }
 ) {
   try {
-    const playerId = params.playerId;
+    const playerId = (await params).playerId;
     const { followers, trending } = await request.json();
     
     if (followers === undefined || trending === undefined) {

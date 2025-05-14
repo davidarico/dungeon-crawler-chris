@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { classId: string } }
 ) {
   try {
-    const classId = params.classId;
+    const classId = (await params).classId;
     
     if (!classId) {
       return NextResponse.json({ error: 'Class ID is required' }, { status: 400 });

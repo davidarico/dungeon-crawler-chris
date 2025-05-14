@@ -11,7 +11,7 @@ interface RouteParams {
 // GET: Fetch all players for a specific game
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    const { gameId } = params;
+    const { gameId } = (await params);
     
     // Get user session
     const session = await getServerSession();
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Return the players
     return NextResponse.json(players);
   } catch (error) {
-    console.error(`API error fetching players for game ${params.gameId}:`, error);
+    console.error(`API error fetching players for game ${(await params).gameId}:`, error);
     return NextResponse.json(
       { error: 'Failed to fetch players' },
       { status: 500 }

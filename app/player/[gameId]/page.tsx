@@ -25,6 +25,7 @@ import { WeaponDetails } from "@/components/weapon-details"
 import { FollowersCard } from "@/components/followers-card"
 import { EquipmentSlots } from "@/components/equipment-slots"
 import { CreditCard } from "@/components/credit-card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { 
   fetchGame,
   fetchPlayerByGameAndUser,
@@ -44,7 +45,8 @@ import {
   removeLootboxFromPlayer,
   equipItem,
   unequipItem,
-  getLootboxItems
+  getLootboxItems,
+  fetchItems
 } from "@/lib/client-utils"
 import { getSession } from "next-auth/react"
 import { Item, EquipSlot } from "@/lib/types"
@@ -82,6 +84,11 @@ export default function PlayerPage() {
   const [isLootboxResultDialogOpen, setIsLootboxResultDialogOpen] = useState(false)
   const [sparkles, setSparkles] = useState<any[]>([])
   const [isAbilityScoresDialogOpen, setIsAbilityScoresDialogOpen] = useState(false)
+  const [isAddItemDialogOpen, setIsAddItemDialogOpen] = useState(false)
+  const [allItems, setAllItems] = useState<Item[]>([])
+  const [itemSearch, setItemSearch] = useState("")
+  const [selectedAddItems, setSelectedAddItems] = useState<string[]>([])
+  const [isAddingItem, setIsAddingItem] = useState(false)
 
   const lootboxRef = useRef<HTMLDivElement>(null)
 
@@ -148,6 +155,12 @@ export default function PlayerPage() {
 
     fetchData();
   }, [gameId, router]);
+
+  useEffect(() => {
+    if (isAddItemDialogOpen && allItems.length === 0) {
+      fetchItems().then(setAllItems).catch(() => setAllItems([]))
+    }
+  }, [isAddItemDialogOpen, allItems.length])
 
   const refreshPlayerData = async () => {
     if (!player) return
@@ -314,6 +327,24 @@ export default function PlayerPage() {
       setPlayer(updatedPlayer)
     } catch (err) {
       console.error("Error updating gold:", err)
+    }
+  }
+
+  const handleAddItemsToInventory = async () => {
+    if (!player || selectedAddItems.length === 0) return
+    setIsAddingItem(true)
+    try {
+      for (const itemId of selectedAddItems) {
+        await addItemToPlayer(player.id, itemId)
+      }
+      await refreshPlayerData()
+      setIsAddItemDialogOpen(false)
+      setSelectedAddItems([])
+      setItemSearch("")
+    } catch (err) {
+      // Optionally show error
+    } finally {
+      setIsAddingItem(false)
     }
   }
 
@@ -548,7 +579,7 @@ export default function PlayerPage() {
                 <span>Lootboxes</span>
               </TabsTrigger>
             </TabsList>
-            <div className="relative w-full max-w-xs">
+            <div className="relative w-full max-w-xs flex gap-2 items-center">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder={`Search ${activeTab === "equipment" ? "items" : activeTab}...`}
@@ -556,6 +587,11 @@ export default function PlayerPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
+              {activeTab === "items" && (
+                <Button size="sm" variant="default" className="ml-2" onClick={() => setIsAddItemDialogOpen(true)}>
+                  Add Item
+                </Button>
+              )}
             </div>
           </div>
 
@@ -778,6 +814,64 @@ export default function PlayerPage() {
           </div>
           <DialogFooter>
             <Button onClick={() => setIsLootboxResultDialogOpen(false)}>Add to Inventory</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Item Dialog */}
+      <Dialog open={isAddItemDialogOpen} onOpenChange={setIsAddItemDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] bg-card">
+          <DialogHeader>
+            <DialogTitle>Add Item to Inventory</DialogTitle>
+            <DialogDescription>Search and select items to add to your inventory.</DialogDescription>
+          </DialogHeader>
+          <div className="mb-4">
+            <Input
+              placeholder="Search items..."
+              value={itemSearch}
+              onChange={e => setItemSearch(e.target.value)}
+              className="mb-2"
+            />
+            <div className="max-h-64 overflow-y-auto space-y-2">
+              {allItems
+                .filter(item =>
+                  item.name.toLowerCase().includes(itemSearch.toLowerCase()) ||
+                  item.description.toLowerCase().includes(itemSearch.toLowerCase()) ||
+                  item.categories.some(cat => cat.toLowerCase().includes(itemSearch.toLowerCase()))
+                )
+                .map(item => (
+                  <div key={item.id} className={`flex items-center gap-2 p-2 rounded border ${selectedAddItems.includes(item.id) ? "border-primary bg-primary/10" : "border-border"}`}>
+                    <Checkbox
+                      id={`add-item-${item.id}`}
+                      checked={selectedAddItems.includes(item.id)}
+                      onCheckedChange={checked => {
+                        if (checked) setSelectedAddItems([...selectedAddItems, item.id])
+                        else setSelectedAddItems(selectedAddItems.filter(id => id !== item.id))
+                      }}
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium">{item.name}</div>
+                      <div className="text-xs text-muted-foreground italic">{item.flavorText}</div>
+                      <div className="text-xs">{item.description}</div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {item.categories.map(cat => (
+                          <Badge key={cat} variant="outline" className="text-xs">{cat}</Badge>
+                        ))}
+                        {item.equip_slot && (
+                          <Badge variant="default" className="bg-blue-600 text-xs">{item.equip_slot}</Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              {allItems.length === 0 && <div className="text-center text-muted-foreground py-4">No items found.</div>}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddItemDialogOpen(false)} disabled={isAddingItem}>Cancel</Button>
+            <Button onClick={handleAddItemsToInventory} disabled={selectedAddItems.length === 0 || isAddingItem}>
+              {isAddingItem ? "Adding..." : "Add Selected"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
