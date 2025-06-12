@@ -3,9 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node server.js",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production node server.js",
+    "start:win": "set NODE_ENV=production&& node server.js",
     "lint": "next lint"
   },
   "dependencies": {
@@ -44,6 +45,7 @@
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
+    "dotenv": "^16.5.0",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
@@ -53,6 +55,7 @@
     "openai": "^4.96.2",
     "pg": "^8.15.6",
     "pg-format": "^1.0.4",
+    "pg-listen": "^1.7.0",
     "react": "^19",
     "react-day-picker": "8.10.1",
     "react-dom": "^19",
@@ -60,6 +63,8 @@
     "react-icons": "^5.5.0",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
     "tailwindcss-animate": "^1.0.7",
