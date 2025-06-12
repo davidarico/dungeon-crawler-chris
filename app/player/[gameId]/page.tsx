@@ -114,14 +114,27 @@ export default function PlayerPage() {
 
   const lootboxRef = useRef<HTMLDivElement>(null);
 
+  // Track if a refresh is in progress to prevent overlapping refreshes
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  // Track the last processed update timestamp
+  const [lastProcessedUpdate, setLastProcessedUpdate] = useState<string | null>(
+    null
+  );
+
   // Define refreshPlayerData function before using it
   const refreshPlayerData = useCallback(async () => {
-    if (!player) return;
+    if (!player || isRefreshing) return;
 
     try {
+      setIsRefreshing(true);
+      console.log("Starting player data refresh");
+
       // Get updated player data
       const updatedPlayer = await fetchPlayer(player.id);
-      if (!updatedPlayer) return;
+      if (!updatedPlayer) {
+        setIsRefreshing(false);
+        return;
+      }
 
       setPlayer(updatedPlayer);
 
@@ -143,32 +156,101 @@ export default function PlayerPage() {
           : null;
         setPlayerClass(classData);
       }
+
+      console.log("Player data refresh completed");
     } catch (err) {
       console.error("Error refreshing player data:", err);
+    } finally {
+      setIsRefreshing(false);
     }
-  }, [player]);
+  }, [player, isRefreshing]);
 
   // Initialize WebSocket connection
   const { isConnected, lastUpdate } = useWebSocket(player?.id);
 
-  // Handle WebSocket updates
+  // Track the last update we processed to avoid duplicate processing
+  const lastProcessedUpdateRef = useRef<string | null>(null);
+
+  // Handle WebSocket updates with improved deduplication
   useEffect(() => {
-    if (lastUpdate && player) {
-      console.log("WebSocket update received:", lastUpdate);
-      setLastUpdateTime(new Date().toLocaleTimeString());
+    if (!lastUpdate || !player) return;
 
-      // Only refresh if the update is for this player
-      if (lastUpdate.playerId === player.id) {
-        console.log("Refreshing player data due to WebSocket update");
-        // Add a small delay to prevent potential infinite loops
-        const timeoutId = setTimeout(() => {
-          refreshPlayerData();
-        }, 300);
-
-        return () => clearTimeout(timeoutId);
-      }
+    // Skip if we're already refreshing data
+    if (isRefreshing) {
+      console.log("Skipping WebSocket update - refresh already in progress");
+      return;
     }
-  }, [lastUpdate, player, refreshPlayerData]);
+
+    // Skip if this is the same update we already processed
+    // Using a ref instead of state to avoid re-renders
+    if (lastUpdate.timestamp === lastProcessedUpdateRef.current) {
+      console.log("Skipping duplicate WebSocket update:", lastUpdate.timestamp);
+      return;
+    }
+
+    // Skip if the update is not for this player
+    if (lastUpdate.playerId !== player.id) {
+      console.log("Skipping WebSocket update for different player");
+      return;
+    }
+
+    console.log("Processing WebSocket update:", lastUpdate);
+    setLastUpdateTime(new Date().toLocaleTimeString());
+
+    // Remember this update's timestamp
+    lastProcessedUpdateRef.current = lastUpdate.timestamp;
+
+    // Use a function to fetch data to avoid state closure issues
+    const fetchUpdatedData = async () => {
+      try {
+        setIsRefreshing(true);
+
+        // Get a snapshot of the current player data for comparison
+        const currentPlayerSnapshot = JSON.stringify(player);
+
+        // Fetch all player data in parallel
+        const [updatedPlayer, items, spells, lootboxes, equippedItems] =
+          await Promise.all([
+            fetchPlayer(player.id),
+            fetchPlayerItems(player.id),
+            fetchPlayerSpells(player.id),
+            fetchPlayerLootboxes(player.id),
+            fetchPlayerEquipment(player.id),
+          ]);
+
+        // Only update state if we got valid data
+        if (updatedPlayer) {
+          // Check if player data has actually changed
+          if (JSON.stringify(updatedPlayer) !== currentPlayerSnapshot) {
+            console.log("Player data changed, updating state");
+            setPlayer(updatedPlayer);
+          } else {
+            console.log("Player data unchanged, skipping player state update");
+          }
+
+          // Update related data
+          setPlayerItems(items);
+          setPlayerSpells(spells);
+          setPlayerLootboxes(lootboxes);
+          setPlayerEquippedItems(equippedItems);
+
+          // Update class if needed
+          if (updatedPlayer.classId !== player.classId) {
+            const classData = await fetchClass(updatedPlayer.classId);
+            setPlayerClass(classData);
+          }
+        }
+      } catch (err) {
+        console.error("Error processing WebSocket update:", err);
+      } finally {
+        setIsRefreshing(false);
+      }
+    };
+
+    // Execute the fetch with a small delay to debounce rapid updates
+    const timeoutId = setTimeout(fetchUpdatedData, 100);
+    return () => clearTimeout(timeoutId);
+  }, [lastUpdate, player, isRefreshing]);
 
   useEffect(() => {
     async function fetchData() {

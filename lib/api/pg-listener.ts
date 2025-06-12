@@ -77,6 +77,11 @@ listener.events.on("error", (error: Error) => {
 
 // Handle notifications
 listener.notifications.on("player_changes", (payload) => {
+  // Ensure payload has a timestamp for deduplication
+  if (payload && !payload.timestamp) {
+    payload.timestamp = new Date().toISOString();
+    console.log("Added timestamp to notification:", payload);
+  }
   console.log("Received player_changes notification:", payload);
 });
 

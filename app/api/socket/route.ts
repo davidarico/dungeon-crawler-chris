@@ -69,6 +69,11 @@ export async function GET(req: NextRequest) {
     pgListener.getListener().notifications.on("player_changes", (payload) => {
       console.log("PostgreSQL notification received:", payload);
       if (payload && payload.playerId) {
+        // Ensure the payload has a timestamp for deduplication
+        if (!payload.timestamp) {
+          payload.timestamp = new Date().toISOString();
+        }
+
         // Broadcast the change to all clients subscribed to this player
         io?.to(`player:${payload.playerId}`).emit("player_updated", payload);
 
@@ -81,7 +86,7 @@ export async function GET(req: NextRequest) {
         io?.emit("debug_update", {
           type: "player_update",
           payload,
-          timestamp: new Date().toISOString(),
+          timestamp: payload.timestamp,
         });
       }
     });

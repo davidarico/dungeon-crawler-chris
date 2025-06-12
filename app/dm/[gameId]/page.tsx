@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -195,21 +195,33 @@ export default function DMPage() {
     fetchData();
   }, [gameId, router]);
 
-  // Refresh data when WebSocket updates are received with debounce
+  // Track the last update we processed to avoid duplicate processing
+  const lastProcessedUpdateRef = useRef<string | null>(null);
+
+  // Handle WebSocket updates with improved deduplication
   useEffect(() => {
-    if (!lastUpdate) return;
+    if (!lastUpdate || !gameId) return;
 
-    console.log("DM page received WebSocket update:", lastUpdate);
+    // Skip if this is the same update we already processed
+    // Using a ref instead of state to avoid re-renders
+    if (lastUpdate.timestamp === lastProcessedUpdateRef.current) {
+      console.log("Skipping duplicate WebSocket update:", lastUpdate.timestamp);
+      return;
+    }
 
-    // Use a debounce mechanism to prevent rapid successive calls
-    const debounceTimeout = setTimeout(() => {
+    console.log("Processing DM WebSocket update:", lastUpdate);
+
+    // Remember this update's timestamp
+    lastProcessedUpdateRef.current = lastUpdate.timestamp;
+
+    // Use a small delay to debounce rapid updates
+    const timeoutId = setTimeout(() => {
       console.log("Executing debounced fetchData after WebSocket update");
       fetchData();
-    }, 1000); // 1 second debounce
+    }, 100);
 
-    // Clear the timeout if another update comes in before the delay is up
-    return () => clearTimeout(debounceTimeout);
-  }, [lastUpdate, fetchData]);
+    return () => clearTimeout(timeoutId);
+  }, [lastUpdate, gameId, fetchData]);
 
   const handleCopyInviteLink = () => {
     navigator.clipboard.writeText(inviteLink);
