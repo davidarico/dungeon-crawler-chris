@@ -28,3 +28,6 @@ next-env.d.ts
 
 # bash files
 update_database.sh
+
+# memory-bank
+/memory-bank
